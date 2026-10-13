@@ -1,3 +1,4 @@
+import { requireUser, UnauthorizedError } from "@/lib/auth/session";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
 import { getTicket, updateTicket } from "@/lib/services/tickets";
 
@@ -5,25 +6,35 @@ type TicketRouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: TicketRouteContext) {
+const GET = async (_request: Request, context: TicketRouteContext) => {
   try {
+    await requireUser();
     const { id } = await context.params;
     const ticket = await getTicket(id);
     return jsonResponse({ ticket });
   } catch (error) {
-    return jsonResponse({ error: getErrorMessage(error) }, { status: 404 });
+    const status = error instanceof UnauthorizedError ? 401 : 404;
+    return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
-}
+};
 
-export async function PATCH(request: Request, context: TicketRouteContext) {
+const PATCH = async (request: Request, context: TicketRouteContext) => {
   try {
+    await requireUser();
     const { id } = await context.params;
     const payload = await request.json();
     const ticket = await updateTicket(id, payload);
     return jsonResponse({ ticket });
   } catch (error) {
     const message = getErrorMessage(error);
-    const status = message === "Ticket not found" ? 404 : 400;
+    const status =
+      error instanceof UnauthorizedError
+        ? 401
+        : message === "Ticket not found"
+          ? 404
+          : 400;
     return jsonResponse({ error: message }, { status });
   }
-}
+};
+
+export { GET, PATCH };

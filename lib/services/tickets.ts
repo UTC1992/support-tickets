@@ -1,5 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
 
 const ticketStatuses = [
   "pending",
@@ -51,7 +51,7 @@ const ticketInclude = {
   technician: true,
 } satisfies Prisma.TicketInclude;
 
-export async function listTickets(filters: TicketFilters) {
+export const listTickets = async (filters: TicketFilters) => {
   const take = clampLimit(filters.limit);
   const where: Prisma.TicketWhereInput = {};
 
@@ -84,9 +84,9 @@ export async function listTickets(filters: TicketFilters) {
     orderBy: [{ intakeDate: "desc" }, { createdAt: "desc" }],
     take,
   });
-}
+};
 
-export async function getTicket(id: string) {
+export const getTicket = async (id: string) => {
   const ticket = await prisma.ticket.findUnique({
     where: { id },
     include: {
@@ -103,9 +103,9 @@ export async function getTicket(id: string) {
   }
 
   return ticket;
-}
+};
 
-export async function createTicket(input: unknown) {
+export const createTicket = async (input: unknown) => {
   const data = parseCreateInput(input);
 
   return prisma.$transaction(async (tx) => {
@@ -124,9 +124,9 @@ export async function createTicket(input: unknown) {
 
     return ticket;
   });
-}
+};
 
-export async function updateTicket(id: string, input: unknown) {
+export const updateTicket = async (id: string, input: unknown) => {
   const data = parseUpdateInput(input);
 
   return prisma.$transaction(async (tx) => {
@@ -153,9 +153,9 @@ export async function updateTicket(id: string, input: unknown) {
 
     return ticket;
   });
-}
+};
 
-function parseCreateInput(input: unknown): Prisma.TicketCreateInput {
+const parseCreateInput = (input: unknown): Prisma.TicketCreateInput => {
   const payload = readObject(input);
   const clientName = readRequiredString(payload, "clientName");
 
@@ -176,9 +176,9 @@ function parseCreateInput(input: unknown): Prisma.TicketCreateInput {
     technicianNotes: readOptionalString(payload, "technicianNotes"),
     resultNotes: readOptionalString(payload, "resultNotes"),
   };
-}
+};
 
-function parseUpdateInput(input: unknown): Prisma.TicketUpdateInput {
+const parseUpdateInput = (input: unknown): Prisma.TicketUpdateInput => {
   const payload = readObject(input);
   const data: Prisma.TicketUpdateInput = {};
 
@@ -201,17 +201,17 @@ function parseUpdateInput(input: unknown): Prisma.TicketUpdateInput {
   if ("completedAt" in payload) data.completedAt = parseOptionalDateTime(payload, "completedAt");
 
   return data;
-}
+};
 
-function readObject(input: unknown): Record<string, unknown> {
+const readObject = (input: unknown): Record<string, unknown> => {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Request body must be an object");
   }
 
   return input as Record<string, unknown>;
-}
+};
 
-function readRequiredString(payload: Record<string, unknown>, key: string) {
+const readRequiredString = (payload: Record<string, unknown>, key: string) => {
   const value = readOptionalString(payload, key);
 
   if (!value) {
@@ -219,34 +219,34 @@ function readRequiredString(payload: Record<string, unknown>, key: string) {
   }
 
   return value;
-}
+};
 
-function readOptionalString(payload: Record<string, unknown>, key: string) {
+const readOptionalString = (payload: Record<string, unknown>, key: string) => {
   const value = payload[key];
 
   if (value === undefined || value === null || value === "") return undefined;
   if (typeof value !== "string") throw new Error(`${key} must be a string`);
 
   return value.trim();
-}
+};
 
-function parseStatus(value: string) {
+const parseStatus = (value: string) => {
   if (!ticketStatuses.includes(value as TicketStatusInput)) {
     throw new Error(`Invalid ticket status: ${value}`);
   }
 
   return value as TicketStatusInput;
-}
+};
 
-function parsePriority(value: string) {
+const parsePriority = (value: string) => {
   if (!ticketPriorities.includes(value as TicketPriorityInput)) {
     throw new Error(`Invalid ticket priority: ${value}`);
   }
 
   return value as TicketPriorityInput;
-}
+};
 
-function parseDate(value?: string | null) {
+const parseDate = (value?: string | null) => {
   if (!value) return new Date();
   const date = new Date(`${value}T00:00:00`);
 
@@ -255,9 +255,9 @@ function parseDate(value?: string | null) {
   }
 
   return date;
-}
+};
 
-function parseOptionalDateTime(payload: Record<string, unknown>, key: string) {
+const parseOptionalDateTime = (payload: Record<string, unknown>, key: string) => {
   const value = readOptionalString(payload, key);
   if (!value) return undefined;
   const date = new Date(value);
@@ -267,20 +267,20 @@ function parseOptionalDateTime(payload: Record<string, unknown>, key: string) {
   }
 
   return date;
-}
+};
 
-function connectOptional(payload: Record<string, unknown>, key: string) {
+const connectOptional = (payload: Record<string, unknown>, key: string) => {
   const id = readOptionalString(payload, key);
   return id ? { connect: { id } } : undefined;
-}
+};
 
-function connectNullable(value: unknown) {
+const connectNullable = (value: unknown) => {
   if (value === null || value === "") return { disconnect: true };
   if (typeof value !== "string") throw new Error("Relation id must be a string or null");
   return { connect: { id: value } };
-}
+};
 
-function assignNullableString(
+const assignNullableString = (
   data: Prisma.TicketUpdateInput,
   key: keyof Pick<
     TicketCreateInput,
@@ -292,17 +292,17 @@ function assignNullableString(
     | "resultNotes"
   >,
   payload: Record<string, unknown>,
-) {
+) => {
   if (key in payload) {
     data[key] = readOptionalString(payload, key) ?? null;
   }
-}
+};
 
-function clampLimit(value?: string | null) {
+const clampLimit = (value?: string | null) => {
   if (!value) return 50;
   const limit = Number.parseInt(value, 10);
 
   if (Number.isNaN(limit)) return 50;
 
   return Math.min(Math.max(limit, 1), 100);
-}
+};

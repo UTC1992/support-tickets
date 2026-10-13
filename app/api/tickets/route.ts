@@ -1,8 +1,10 @@
+import { requireUser, UnauthorizedError } from "@/lib/auth/session";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
 import { createTicket, listTickets } from "@/lib/services/tickets";
 
-export async function GET(request: Request) {
+const GET = async (request: Request) => {
   try {
+    await requireUser();
     const { searchParams } = new URL(request.url);
     const tickets = await listTickets({
       status: searchParams.get("status"),
@@ -17,16 +19,21 @@ export async function GET(request: Request) {
 
     return jsonResponse({ tickets });
   } catch (error) {
-    return jsonResponse({ error: getErrorMessage(error) }, { status: 400 });
+    const status = error instanceof UnauthorizedError ? 401 : 400;
+    return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
-}
+};
 
-export async function POST(request: Request) {
+const POST = async (request: Request) => {
   try {
+    await requireUser();
     const payload = await request.json();
     const ticket = await createTicket(payload);
     return jsonResponse({ ticket }, { status: 201 });
   } catch (error) {
-    return jsonResponse({ error: getErrorMessage(error) }, { status: 400 });
+    const status = error instanceof UnauthorizedError ? 401 : 400;
+    return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
-}
+};
+
+export { GET, POST };

@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
 
-export async function listCatalogs() {
+const listCatalogs = async () => {
   const [zones, supportTypes, technicians] = await Promise.all([
     prisma.zone.findMany({
       where: { isActive: true },
@@ -31,4 +31,6 @@ export async function listCatalogs() {
     ],
     priorities: ["low", "normal", "high", "urgent"],
   };
-}
+};
+
+export default listCatalogs;

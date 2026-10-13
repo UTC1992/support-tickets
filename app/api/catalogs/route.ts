@@ -1,11 +1,16 @@
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
-import { listCatalogs } from "@/lib/services/catalogs";
+import { requireUser, UnauthorizedError } from "@/lib/auth/session";
+import listCatalogs from "@/lib/services/catalogs";
 
-export async function GET() {
+const GET = async () => {
   try {
+    await requireUser();
     const catalogs = await listCatalogs();
     return jsonResponse(catalogs);
   } catch (error) {
-    return jsonResponse({ error: getErrorMessage(error) }, { status: 500 });
+    const status = error instanceof UnauthorizedError ? 401 : 500;
+    return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
-}
+};
+
+export { GET };
