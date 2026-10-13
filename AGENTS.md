@@ -1,9 +1,28 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-## This is NOT the Next.js you know
+## Project Docs Index
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+Antes de crear o modificar codigo del proyecto, revisar los docs segun el tipo
+de cambio:
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+- Estructura de carpetas: `docs/rules/project-structure.md`
+- Nombres, exports y commits: `docs/rules/naming.md`
+- Componentes React: `docs/skills/create-component.md`
+- Hooks React: `docs/skills/create-hook.md`
+- Servicios y logica de datos: `docs/skills/create-service.md`
+- Route Handlers de Next.js: `docs/skills/create-route-handler.md`
+
+Reglas rapidas:
+
+- Componentes en `features/<feature>/components`.
+- Hooks en `features/<feature>/hooks`.
+- Servicios de feature en `features/<feature>/services`.
+- Servicios compartidos en `lib/services`.
+- Route Handlers en `app/api`.
+- Usar arrow functions por defecto.
+- Usar `export default` al final cuando el archivo tenga un solo export
+  principal, excepto Route Handlers de Next que requieren `GET`, `POST`,
+  `PATCH`, etc.
+- Validar con `yarn lint` y `yarn tsc --noEmit` antes de commitear.
 
 <!-- END:nextjs-agent-rules -->
