@@ -155,6 +155,16 @@ export const updateTicket = async (id: string, input: unknown) => {
   });
 };
 
+export const deleteTicket = async (id: string) => {
+  const ticket = await prisma.ticket.findUnique({ where: { id }, select: { id: true } });
+
+  if (!ticket) {
+    throw new Error("Ticket not found");
+  }
+
+  await prisma.ticket.delete({ where: { id } });
+};
+
 const parseCreateInput = (input: unknown): Prisma.TicketCreateInput => {
   const payload = readObject(input);
   const clientName = readRequiredString(payload, "clientName");
@@ -258,8 +268,12 @@ const parseDate = (value?: string | null) => {
 };
 
 const parseOptionalDateTime = (payload: Record<string, unknown>, key: string) => {
-  const value = readOptionalString(payload, key);
-  if (!value) return undefined;
+  const rawValue = payload[key];
+  if (rawValue === undefined) return undefined;
+  if (rawValue === null || rawValue === "") return null;
+  if (typeof rawValue !== "string") throw new Error(`${key} must be a valid date`);
+  const value = rawValue.trim();
+  if (!value) return null;
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

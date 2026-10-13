@@ -1,6 +1,7 @@
+import { AdminAccessError, assertAdmin } from "@/lib/auth/admin";
 import { requireUser, UnauthorizedError } from "@/lib/auth/session";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
-import { getTicket, updateTicket } from "@/lib/services/tickets";
+import { deleteTicket, getTicket, updateTicket } from "@/lib/services/tickets";
 
 type TicketRouteContext = {
   params: Promise<{ id: string }>;
@@ -37,4 +38,19 @@ const PATCH = async (request: Request, context: TicketRouteContext) => {
   }
 };
 
-export { GET, PATCH };
+const DELETE = async (_request: Request, context: TicketRouteContext) => {
+  try {
+    await assertAdmin();
+    const { id } = await context.params;
+    await deleteTicket(id);
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof AdminAccessError) {
+      return jsonResponse({ error: error.message }, { status: error.status });
+    }
+    const status = getErrorMessage(error) === "Ticket not found" ? 404 : 400;
+    return jsonResponse({ error: status === 404 ? "Soporte no encontrado" : "No se pudo eliminar el soporte" }, { status });
+  }
+};
+
+export { DELETE, GET, PATCH };

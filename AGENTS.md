@@ -1,6 +1,4 @@
-<!-- BEGIN:nextjs-agent-rules -->
-
-## Project Docs Index
+# Project Docs Index
 
 Antes de crear o modificar codigo del proyecto, revisar los docs segun el tipo
 de cambio:
@@ -24,5 +22,3 @@ Reglas rapidas:
   principal, excepto Route Handlers de Next que requieren `GET`, `POST`,
   `PATCH`, etc.
 - Validar con `yarn lint` y `yarn tsc --noEmit` antes de commitear.
-
-<!-- END:nextjs-agent-rules -->

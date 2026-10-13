@@ -4349,6 +4349,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lucide-react@npm:^1.56.0":
+  version: 1.56.0
+  resolution: "lucide-react@npm:1.56.0"
+  peerDependencies:
+    "@types/react": "*"
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/f89744ee0be41b6e916cefa5f499e343de9c18bc7181a2de0b0581c02d1e25defc1c19fe32a3f8ad55c56bc04be222320f33c4a0552abafcd28663ec0262212a
+  languageName: node
+  linkType: hard
+
 "magic-string@npm:^0.30.21":
   version: 0.30.21
   resolution: "magic-string@npm:0.30.21"
@@ -5223,6 +5236,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"server-only@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "server-only@npm:0.0.1"
+  checksum: 10c0/4704f0ef85da0be981af6d4ed8e739d39bcfd265b9c246a684060acda5642d0fdc6daffc2308e71e2682c5f508090978802eae0a77623c9b90a49f9ae68048d6
+  languageName: node
+  linkType: hard
+
 "set-function-length@npm:^1.2.2":
   version: 1.2.2
   resolution: "set-function-length@npm:1.2.2"
@@ -5599,11 +5619,13 @@ __metadata:
     "@types/react-dom": "npm:^19"
     eslint: "npm:^9"
     eslint-config-next: "npm:16.4.0-canary.62"
+    lucide-react: "npm:^1.56.0"
     next: "npm:16.4.0-canary.62"
     pg: "npm:8.23.1"
     prisma: "npm:7.10.0"
     react: "npm:19.3.0"
     react-dom: "npm:19.3.0"
+    server-only: "npm:^0.0.1"
     tailwindcss: "npm:^4"
     typescript: "npm:^5"
   languageName: unknown
