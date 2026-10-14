@@ -1,34 +1,13 @@
 "use client";
 
 import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
-import { createTicketRequest, deleteTicketRequest, updateTicketRequest } from "@/features/tickets/services/ticket-api-service";
+import { FormEvent } from "react";
+import useTicketManager from "@/features/tickets/hooks/useTicketManager";
+import type { TicketCatalogs, TicketItem } from "@/features/tickets/types";
 
-type CatalogOption = { id: string; name: string };
-type TicketItem = {
-  id: string;
-  clientName: string;
-  clientPhone: string | null;
-  clientIp: string | null;
-  sector: string | null;
-  zoneId: string | null;
-  supportTypeId: string | null;
-  technicianId: string | null;
-  status: string;
-  priority: string;
-  intakeDate: string;
-  scheduledAt: string | null;
-  completedAt: string | null;
-  observation: string | null;
-  technicianNotes: string | null;
-  resultNotes: string | null;
-  zone: CatalogOption | null;
-  supportType: CatalogOption | null;
-  technician: CatalogOption | null;
-};
 type TicketManagerProps = {
   initialTickets: TicketItem[];
-  catalogs: { zones: CatalogOption[]; supportTypes: CatalogOption[]; technicians: CatalogOption[] };
+  catalogs: TicketCatalogs;
   canDelete?: boolean;
 };
 
@@ -42,64 +21,24 @@ const dateValue = (value: string | null) => value ? value.slice(0, 16) : "";
 const today = () => new Date().toISOString().slice(0, 10);
 
 const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketManagerProps) => {
-  const [tickets, setTickets] = useState(initialTickets);
-  const [editing, setEditing] = useState<TicketItem | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const {
+    closeForm,
+    deleteTicket,
+    editing,
+    error,
+    isOpen,
+    isSaving,
+    openCreate,
+    openEdit,
+    saveTicket,
+    search,
+    setSearch,
+    visibleTickets,
+  } = useTicketManager(initialTickets);
 
-  const visibleTickets = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return tickets;
-    return tickets.filter((ticket) => [ticket.clientName, ticket.clientPhone, ticket.clientIp, ticket.sector, ticket.technician?.name].some((value) => value?.toLowerCase().includes(term)));
-  }, [search, tickets]);
-
-  const openCreate = () => { setEditing(null); setError(null); setIsOpen(true); };
-  const openEdit = (ticket: TicketItem) => { setEditing(ticket); setError(null); setIsOpen(true); };
-  const normalize = (ticket: TicketItem) => ({ ...ticket, intakeDate: String(ticket.intakeDate), scheduledAt: ticket.scheduledAt ? String(ticket.scheduledAt) : null, completedAt: ticket.completedAt ? String(ticket.completedAt) : null });
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
-    setIsSaving(true);
-    const data = new FormData(event.currentTarget);
-    const value = (key: string) => String(data.get(key) ?? "");
-    const status = value("status");
-    const scheduledAt = value("scheduledAt");
-    const body = {
-      clientName: value("clientName"), clientPhone: value("clientPhone"), clientIp: value("clientIp"), sector: value("sector"),
-      zoneId: value("zoneId"), supportTypeId: value("supportTypeId"), technicianId: value("technicianId"),
-      status, priority: value("priority"), intakeDate: value("intakeDate"), scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-      completedAt: status === "completed" ? editing?.completedAt ?? new Date().toISOString() : null,
-      observation: value("observation"), technicianNotes: value("technicianNotes"), resultNotes: value("resultNotes"),
-    };
-
-    try {
-      if (editing) {
-        const updated = normalize(await updateTicketRequest<TicketItem>(editing.id, body));
-        setTickets((current) => current.map((ticket) => ticket.id === editing.id ? updated : ticket));
-      } else {
-        const created = normalize(await createTicketRequest<TicketItem>(body));
-        setTickets((current) => [created, ...current]);
-      }
-      setIsOpen(false);
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "No se pudo guardar");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const remove = async (ticket: TicketItem) => {
-    if (!window.confirm(`Eliminar el soporte de ${ticket.clientName}?`)) return;
-    setError(null);
-    try {
-      await deleteTicketRequest(ticket.id);
-      setTickets((current) => current.filter((item) => item.id !== ticket.id));
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "No se pudo eliminar");
-    }
+    saveTicket(new FormData(event.currentTarget));
   };
 
   return (
@@ -108,7 +47,7 @@ const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketMan
         <label className="relative block w-full sm:max-w-sm"><Search aria-hidden="true" className="absolute left-3 top-3 size-4 text-zinc-400" /><span className="sr-only">Buscar soportes</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente, IP o tecnico" className="h-10 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-zinc-900" /></label>
         <button type="button" onClick={openCreate} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700"><Plus className="size-4" /> Nuevo soporte</button>
       </div>
-      {error && !isOpen ? <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error && !isOpen ? <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
       <div className="overflow-hidden border-y border-zinc-200 bg-white sm:rounded-md sm:border">
         {visibleTickets.length === 0 ? <p className="px-4 py-12 text-center text-sm text-zinc-500">No hay soportes que mostrar.</p> : visibleTickets.map((ticket) => (
           <div key={ticket.id} className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3 last:border-0">
@@ -117,7 +56,7 @@ const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketMan
               <p className="mt-1 truncate text-xs text-zinc-500">{ticket.zone?.name ?? ticket.sector ?? "Sin zona"} · {ticket.supportType?.name ?? "Sin tipo"} · {ticket.technician?.name ?? "Sin asignar"}</p>
             </div>
             <button type="button" onClick={() => openEdit(ticket)} title="Editar" aria-label={`Editar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-zinc-600 hover:bg-zinc-100"><Pencil className="size-4" /></button>
-            {canDelete ? <button type="button" onClick={() => remove(ticket)} title="Eliminar" aria-label={`Eliminar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button> : null}
+            {canDelete ? <button type="button" onClick={() => deleteTicket(ticket)} title="Eliminar" aria-label={`Eliminar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button> : null}
           </div>
         ))}
       </div>
@@ -125,7 +64,7 @@ const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketMan
       {isOpen ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-0 sm:p-4" role="dialog" aria-modal="true">
           <form onSubmit={handleSubmit} className="mx-auto min-h-full w-full bg-white p-5 shadow-xl sm:min-h-0 sm:max-w-2xl sm:rounded-md">
-            <div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-semibold">{editing ? "Editar soporte" : "Nuevo soporte"}</h3><button type="button" onClick={() => setIsOpen(false)} aria-label="Cerrar" className="grid size-9 place-items-center rounded-md hover:bg-zinc-100"><X className="size-5" /></button></div>
+            <div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-semibold">{editing ? "Editar soporte" : "Nuevo soporte"}</h3><button type="button" onClick={closeForm} aria-label="Cerrar" className="grid size-9 place-items-center rounded-md hover:bg-zinc-100"><X className="size-5" /></button></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">Cliente<input name="clientName" defaultValue={editing?.clientName} required autoFocus className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base" /></label>
               <label className="text-sm font-medium">Telefono<input name="clientPhone" defaultValue={editing?.clientPhone ?? ""} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base" /></label>
@@ -142,8 +81,8 @@ const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketMan
               <label className="text-sm font-medium sm:col-span-2">Notas del tecnico<textarea name="technicianNotes" defaultValue={editing?.technicianNotes ?? ""} rows={2} className="mt-1.5 w-full rounded-md border border-zinc-300 p-3 text-base" /></label>
               <label className="text-sm font-medium sm:col-span-2">Resultado<textarea name="resultNotes" defaultValue={editing?.resultNotes ?? ""} rows={2} className="mt-1.5 w-full rounded-md border border-zinc-300 p-3 text-base" /></label>
             </div>
-            {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-            <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-zinc-200 bg-white pt-4"><button type="button" onClick={() => setIsOpen(false)} className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium">Cancelar</button><button type="submit" disabled={isSaving} className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white disabled:bg-zinc-400">{isSaving ? "Guardando..." : "Guardar"}</button></div>
+            {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
+            <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-zinc-200 bg-white pt-4"><button type="button" onClick={closeForm} className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium">Cancelar</button><button type="submit" disabled={isSaving} className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white disabled:bg-zinc-400">{isSaving ? "Guardando..." : "Guardar"}</button></div>
           </form>
         </div>
       ) : null}

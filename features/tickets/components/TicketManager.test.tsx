@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import TicketManager from "@/features/tickets/components/TicketManager";
@@ -32,9 +33,21 @@ const ticket = {
 
 const catalogs = { zones: [], supportTypes: [], technicians: [] };
 
+const renderTicketManager = (canDelete: boolean) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TicketManager initialTickets={[ticket]} catalogs={catalogs} canDelete={canDelete} />
+    </QueryClientProvider>,
+  );
+};
+
 describe("TicketManager", () => {
   it("oculta la eliminacion cuando el usuario no tiene permiso", () => {
-    render(<TicketManager initialTickets={[ticket]} catalogs={catalogs} canDelete={false} />);
+    renderTicketManager(false);
 
     expect(screen.getByRole("button", { name: /editar soporte/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /eliminar soporte/i })).not.toBeInTheDocument();

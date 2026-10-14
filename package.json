@@ -19,6 +19,7 @@
     "@prisma/client": "7.10.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
+    "@tanstack/react-query": "^5.104.2",
     "lucide-react": "^1.56.0",
     "next": "16.4.0-canary.62",
     "pg": "8.23.1",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@tanstack/react-query-devtools": "^5.104.2",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
