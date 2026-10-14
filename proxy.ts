@@ -29,6 +29,14 @@ const proxy = async (request: NextRequest) => {
     return redirectWithCookies(new URL("/set-password", request.url), getResponse());
   }
 
+  if (pathname === "/set-password") {
+    const destination = user ? "/" : "/login";
+
+    if (!user || user.user_metadata.must_change_password !== true) {
+      return redirectWithCookies(new URL(destination, request.url), getResponse());
+    }
+  }
+
   if (pathname === "/") {
     if (!user) {
       return redirectWithCookies(new URL("/login", request.url), getResponse());

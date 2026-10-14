@@ -21,25 +21,29 @@ const SetPasswordForm = () => {
     }
 
     setIsSubmitting(true);
-    const supabase = createSupabaseBrowserClient();
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-      data: { must_change_password: false },
-    });
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        data: { must_change_password: false },
+      });
 
-    if (updateError) {
-      setError(
-        updateError.message.toLowerCase().includes("session")
-          ? "La sesion vencio. Inicia sesion nuevamente con tu contrasena temporal"
-          : updateError.message,
-      );
+      if (updateError) {
+        setError(
+          updateError.message.toLowerCase().includes("session")
+            ? "La sesion vencio. Inicia sesion nuevamente con tu contrasena temporal"
+            : updateError.message,
+        );
+        return;
+      }
+
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setError("No se pudo cambiar la contrasena");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    await supabase.auth.signOut();
-    router.replace("/login?passwordUpdated=1");
-    router.refresh();
   };
 
   return (
