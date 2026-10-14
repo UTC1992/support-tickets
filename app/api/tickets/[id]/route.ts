@@ -1,5 +1,5 @@
 import { AdminAccessError, assertAdmin } from "@/lib/auth/admin";
-import { requireUser, UnauthorizedError } from "@/lib/auth/session";
+import { assertBackOffice, BackOfficeAccessError } from "@/lib/auth/back-office";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
 import { deleteTicket, getTicket, updateTicket } from "@/lib/services/tickets";
 
@@ -9,19 +9,19 @@ type TicketRouteContext = {
 
 const GET = async (_request: Request, context: TicketRouteContext) => {
   try {
-    await requireUser();
+    await assertBackOffice();
     const { id } = await context.params;
     const ticket = await getTicket(id);
     return jsonResponse({ ticket });
   } catch (error) {
-    const status = error instanceof UnauthorizedError ? 401 : 404;
+    const status = error instanceof BackOfficeAccessError ? error.status : 404;
     return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
 };
 
 const PATCH = async (request: Request, context: TicketRouteContext) => {
   try {
-    await requireUser();
+    await assertBackOffice();
     const { id } = await context.params;
     const payload = await request.json();
     const ticket = await updateTicket(id, payload);
@@ -29,8 +29,8 @@ const PATCH = async (request: Request, context: TicketRouteContext) => {
   } catch (error) {
     const message = getErrorMessage(error);
     const status =
-      error instanceof UnauthorizedError
-        ? 401
+      error instanceof BackOfficeAccessError
+        ? error.status
         : message === "Ticket not found"
           ? 404
           : 400;

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import getRoleHomePath from "@/features/navigation/services/role-home-service";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/db/prisma";
 
@@ -21,15 +22,7 @@ const HomeRedirect = async () => {
     redirect("/access-denied");
   }
 
-  if (profile.role === "admin") {
-    redirect("/admin");
-  }
-
-  if (profile.role === "technician") {
-    redirect("/technician/tickets");
-  }
-
-  redirect("/access-denied");
+  redirect(getRoleHomePath(profile.role));
 };
 
 const Home = () => (

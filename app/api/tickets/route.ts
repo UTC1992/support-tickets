@@ -1,10 +1,10 @@
-import { requireUser, UnauthorizedError } from "@/lib/auth/session";
+import { assertBackOffice, BackOfficeAccessError } from "@/lib/auth/back-office";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
 import { createTicket, listTickets } from "@/lib/services/tickets";
 
 const GET = async (request: Request) => {
   try {
-    await requireUser();
+    await assertBackOffice();
     const { searchParams } = new URL(request.url);
     const tickets = await listTickets({
       status: searchParams.get("status"),
@@ -19,19 +19,19 @@ const GET = async (request: Request) => {
 
     return jsonResponse({ tickets });
   } catch (error) {
-    const status = error instanceof UnauthorizedError ? 401 : 400;
+    const status = error instanceof BackOfficeAccessError ? error.status : 400;
     return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
 };
 
 const POST = async (request: Request) => {
   try {
-    await requireUser();
+    await assertBackOffice();
     const payload = await request.json();
     const ticket = await createTicket(payload);
     return jsonResponse({ ticket }, { status: 201 });
   } catch (error) {
-    const status = error instanceof UnauthorizedError ? 401 : 400;
+    const status = error instanceof BackOfficeAccessError ? error.status : 400;
     return jsonResponse({ error: getErrorMessage(error) }, { status });
   }
 };

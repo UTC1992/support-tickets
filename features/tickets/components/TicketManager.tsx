@@ -6,16 +6,30 @@ import { createTicketRequest, deleteTicketRequest, updateTicketRequest } from "@
 
 type CatalogOption = { id: string; name: string };
 type TicketItem = {
-  id: string; clientName: string; clientPhone: string | null; clientIp: string | null;
-  sector: string | null; zoneId: string | null; supportTypeId: string | null;
-  technicianId: string | null; status: string; priority: string; intakeDate: string;
-  scheduledAt: string | null; completedAt: string | null; observation: string | null;
-  technicianNotes: string | null; resultNotes: string | null;
-  zone: CatalogOption | null; supportType: CatalogOption | null; technician: CatalogOption | null;
+  id: string;
+  clientName: string;
+  clientPhone: string | null;
+  clientIp: string | null;
+  sector: string | null;
+  zoneId: string | null;
+  supportTypeId: string | null;
+  technicianId: string | null;
+  status: string;
+  priority: string;
+  intakeDate: string;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  observation: string | null;
+  technicianNotes: string | null;
+  resultNotes: string | null;
+  zone: CatalogOption | null;
+  supportType: CatalogOption | null;
+  technician: CatalogOption | null;
 };
 type TicketManagerProps = {
   initialTickets: TicketItem[];
   catalogs: { zones: CatalogOption[]; supportTypes: CatalogOption[]; technicians: CatalogOption[] };
+  canDelete?: boolean;
 };
 
 const statuses = [
@@ -27,7 +41,7 @@ const labelOf = (options: string[][], value: string) => options.find(([key]) => 
 const dateValue = (value: string | null) => value ? value.slice(0, 16) : "";
 const today = () => new Date().toISOString().slice(0, 10);
 
-const TicketManager = ({ initialTickets, catalogs }: TicketManagerProps) => {
+const TicketManager = ({ initialTickets, catalogs, canDelete = true }: TicketManagerProps) => {
   const [tickets, setTickets] = useState(initialTickets);
   const [editing, setEditing] = useState<TicketItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -103,7 +117,7 @@ const TicketManager = ({ initialTickets, catalogs }: TicketManagerProps) => {
               <p className="mt-1 truncate text-xs text-zinc-500">{ticket.zone?.name ?? ticket.sector ?? "Sin zona"} · {ticket.supportType?.name ?? "Sin tipo"} · {ticket.technician?.name ?? "Sin asignar"}</p>
             </div>
             <button type="button" onClick={() => openEdit(ticket)} title="Editar" aria-label={`Editar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-zinc-600 hover:bg-zinc-100"><Pencil className="size-4" /></button>
-            <button type="button" onClick={() => remove(ticket)} title="Eliminar" aria-label={`Eliminar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button>
+            {canDelete ? <button type="button" onClick={() => remove(ticket)} title="Eliminar" aria-label={`Eliminar soporte de ${ticket.clientName}`} className="grid size-9 place-items-center rounded-md text-red-600 hover:bg-red-50"><Trash2 className="size-4" /></button> : null}
           </div>
         ))}
       </div>
