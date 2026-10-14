@@ -1,8 +1,20 @@
 import createSupabaseBrowserClient from "@/lib/auth/supabase-browser";
 
-export const signInWithPassword = async (email: string, password: string) => {
+export const signInWithPassword = async (identifier: string, password: string) => {
   const supabase = createSupabaseBrowserClient();
-  return supabase.auth.signInWithPassword({ email, password });
+  const normalizedIdentifier = identifier.trim();
+
+  if (normalizedIdentifier.includes("@")) {
+    return supabase.auth.signInWithPassword({
+      email: normalizedIdentifier.toLowerCase(),
+      password,
+    });
+  }
+
+  return supabase.auth.signInWithPassword({
+    phone: normalizedIdentifier.replace(/[\s()-]/g, ""),
+    password,
+  });
 };
 
 export const signOut = async () => {

@@ -8,7 +8,9 @@ const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
-  const [email, setEmail] = useState("");
+  const passwordUpdated = searchParams.get("passwordUpdated") === "1";
+  const invalidInvite = searchParams.get("error") === "invalid_invite";
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,12 +20,12 @@ const LoginForm = () => {
     setError(null);
     setIsSubmitting(true);
 
-    const { error: authError } = await signInWithPassword(email, password);
+    const { error: authError } = await signInWithPassword(identifier, password);
 
     setIsSubmitting(false);
 
     if (authError) {
-      setError(authError.message);
+      setError("Correo, telefono o contrasena incorrectos");
       return;
     }
 
@@ -41,14 +43,27 @@ const LoginForm = () => {
         <p className="text-sm text-zinc-600">Ingresa con tu cuenta autorizada.</p>
       </div>
 
+      {passwordUpdated ? (
+        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          Contrasena creada. Ya puedes iniciar sesion.
+        </p>
+      ) : null}
+
+      {invalidInvite ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          La invitacion vencio o no es valida.
+        </p>
+      ) : null}
+
       <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">
-        Correo
+        Correo o telefono
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none transition focus:border-zinc-900"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          type="text"
+          autoComplete="username"
+          placeholder="correo@empresa.com o +593..."
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           required
         />
       </label>

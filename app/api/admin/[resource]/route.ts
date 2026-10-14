@@ -7,7 +7,11 @@ type RouteContext = { params: Promise<{ resource: string }> };
 const POST = async (request: Request, context: RouteContext) => {
   try {
     const { resource } = await context.params;
-    const item = await createAdminResource(parseAdminResource(resource), await request.json());
+    const item = await createAdminResource(
+      parseAdminResource(resource),
+      await request.json(),
+      { origin: new URL(request.url).origin },
+    );
     return jsonResponse({ item }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminAccessError) return jsonResponse({ error: error.message }, { status: error.status });

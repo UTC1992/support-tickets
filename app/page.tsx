@@ -1,7 +1,41 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
+import { getCurrentUser } from "@/lib/auth/session";
+import prisma from "@/lib/db/prisma";
 
-const Home = () => {
-  redirect("/admin");
+const HomeRedirect = async () => {
+  await connection();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: { role: true, isActive: true },
+  });
+
+  if (!profile?.isActive) {
+    redirect("/access-denied");
+  }
+
+  if (profile.role === "admin") {
+    redirect("/admin");
+  }
+
+  if (profile.role === "technician") {
+    redirect("/technician/tickets");
+  }
+
+  redirect("/access-denied");
 };
+
+const Home = () => (
+  <Suspense fallback={null}>
+    <HomeRedirect />
+  </Suspense>
+);
 
 export default Home;

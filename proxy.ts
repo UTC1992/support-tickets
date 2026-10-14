@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createSupabaseProxyClient from "@/lib/auth/supabase-proxy";
 
-const publicPaths = ["/login", "/auth/callback"];
-const protectedPathPrefixes = ["/admin", "/tickets", "/dashboard"];
+const publicPaths = ["/login", "/auth/callback", "/auth/confirm", "/set-password"];
+const protectedPathPrefixes = ["/admin", "/technician", "/tickets", "/dashboard"];
 
 const redirectWithCookies = (destination: URL, response: NextResponse) => {
   const redirectResponse = NextResponse.redirect(destination);
@@ -21,16 +21,24 @@ const proxy = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (
+    user?.user_metadata.must_change_password === true &&
+    pathname !== "/set-password" &&
+    pathname !== "/api/auth/logout"
+  ) {
+    return redirectWithCookies(new URL("/set-password", request.url), getResponse());
+  }
+
   if (pathname === "/") {
     if (!user) {
       return redirectWithCookies(new URL("/login", request.url), getResponse());
     }
 
-    return redirectWithCookies(new URL("/admin", request.url), getResponse());
+    return getResponse();
   }
 
   if (user && pathname === "/login") {
-    return redirectWithCookies(new URL("/admin", request.url), getResponse());
+    return redirectWithCookies(new URL("/", request.url), getResponse());
   }
 
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));

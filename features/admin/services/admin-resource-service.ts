@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AppRole, Prisma } from "@/generated/prisma/client";
 import { assertAdmin } from "@/lib/auth/admin";
+import createSupabaseAdminClient from "@/lib/auth/supabase-admin";
 import prisma from "@/lib/db/prisma";
 
 const resources = ["zones", "technicians", "support-types", "profiles"] as const;
@@ -21,7 +22,15 @@ export const parseAdminResource = (value: string) => {
   return value as AdminResource;
 };
 
-export const createAdminResource = async (resource: AdminResource, input: unknown) => {
+type CreateAdminResourceOptions = {
+  origin?: string;
+};
+
+export const createAdminResource = async (
+  resource: AdminResource,
+  input: unknown,
+  options: CreateAdminResourceOptions = {},
+) => {
   await assertAdmin();
   const payload = readObject(input);
 
@@ -33,7 +42,7 @@ export const createAdminResource = async (resource: AdminResource, input: unknow
     case "support-types":
       return prisma.supportType.create({ data: { name: readRequiredString(payload, "name"), exportGroup: readRequiredString(payload, "exportGroup") }, include: { _count: { select: { tickets: true } } } });
     case "profiles":
-      return prisma.profile.create({ data: { id: readUuid(payload, "id"), fullName: readRequiredString(payload, "fullName"), role: readRole(payload) } });
+      return createProfile(payload, options);
   }
 };
 
@@ -56,7 +65,30 @@ export const updateAdminResource = async (resource: AdminResource, id: string, i
       if (actor.id === id && (data.role !== undefined && data.role !== "admin" || data.isActive === false)) {
         throw new AdminResourceError("No puedes quitar tu propio acceso de administrador");
       }
-      return prisma.profile.update({ where: { id }, data });
+      return prisma.$transaction(async (tx) => {
+        const profile = await tx.profile.update({ where: { id }, data });
+        const technician = await tx.technician.findUnique({ where: { userId: id } });
+
+        if (profile.role === "technician") {
+          if (technician) {
+            await tx.technician.update({
+              where: { id: technician.id },
+              data: { name: profile.fullName, isActive: profile.isActive },
+            });
+          } else {
+            await tx.technician.create({
+              data: { userId: id, name: profile.fullName, isActive: profile.isActive },
+            });
+          }
+        } else if (technician) {
+          await tx.technician.update({
+            where: { id: technician.id },
+            data: { isActive: false },
+          });
+        }
+
+        return profile;
+      });
     }
   }
 };
@@ -66,7 +98,9 @@ export const deleteAdminResource = async (resource: AdminResource, id: string) =
 
   if (resource === "profiles") {
     if (actor.id === id) throw new AdminResourceError("No puedes eliminar tu propio perfil");
-    await prisma.profile.delete({ where: { id } });
+    const supabaseAdmin = createSupabaseAdminClient();
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (error) throw new AdminResourceError("No se pudo eliminar la cuenta");
     return;
   }
 
@@ -100,10 +134,36 @@ const readBoolean = (payload: Record<string, unknown>, key: string) => {
   return payload[key];
 };
 
-const readUuid = (payload: Record<string, unknown>, key: string) => {
-  const value = readRequiredString(payload, key);
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) throw new AdminResourceError("El ID de usuario no es un UUID valido");
-  return value;
+const readEmail = (payload: Record<string, unknown>) => {
+  const email = readRequiredString(payload, "email").toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new AdminResourceError("El correo no es valido");
+  }
+  return email;
+};
+
+const readPhone = (payload: Record<string, unknown>) => {
+  const phone = readRequiredString(payload, "phone").replace(/[\s()-]/g, "");
+  if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+    throw new AdminResourceError("El telefono debe incluir el codigo de pais, por ejemplo +593999999999");
+  }
+  return phone;
+};
+
+const readPassword = (payload: Record<string, unknown>) => {
+  const password = readRequiredString(payload, "password");
+  if (password.length < 8) {
+    throw new AdminResourceError("La contrasena temporal debe tener al menos 8 caracteres");
+  }
+  return password;
+};
+
+const readAuthMethod = (payload: Record<string, unknown>) => {
+  const method = readRequiredString(payload, "authMethod");
+  if (method !== "email" && method !== "phone") {
+    throw new AdminResourceError("El metodo de acceso no es valido");
+  }
+  return method;
 };
 
 const readRole = (payload: Record<string, unknown>) => {
@@ -116,3 +176,85 @@ const catalogUpdate = (payload: Record<string, unknown>) => ({
   ...(has(payload, "name") ? { name: readRequiredString(payload, "name") } : {}),
   ...(has(payload, "isActive") ? { isActive: readBoolean(payload, "isActive") } : {}),
 });
+
+const createProfile = async (
+  payload: Record<string, unknown>,
+  options: CreateAdminResourceOptions,
+) => {
+  const fullName = readRequiredString(payload, "fullName");
+  const authMethod = readAuthMethod(payload);
+  const role = authMethod === "phone" ? "technician" : readRole(payload);
+  const email = authMethod === "email" ? readEmail(payload) : null;
+  const phone = authMethod === "phone" ? readPhone(payload) : null;
+  const password = authMethod === "phone" ? readPassword(payload) : null;
+  const supabaseAdmin = createSupabaseAdminClient();
+
+  if (phone) {
+    const linkedTechnician = await prisma.technician.findFirst({
+      where: { phone, userId: { not: null } },
+      select: { id: true },
+    });
+    if (linkedTechnician) {
+      throw new AdminResourceError("Ese telefono ya esta vinculado a otro tecnico");
+    }
+  }
+
+  const authResult = email
+    ? await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: { full_name: fullName, role },
+        redirectTo: options.origin ? `${options.origin}/set-password` : undefined,
+      })
+    : await supabaseAdmin.auth.admin.createUser({
+        phone: phone!,
+        password: password!,
+        phone_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          must_change_password: true,
+          role,
+        },
+      });
+
+  if (authResult.error || !authResult.data.user) {
+    const identifier = email ? "correo" : "telefono";
+    throw new AdminResourceError(
+      authResult.error?.message.toLowerCase().includes("already")
+        ? `Ya existe una cuenta con ese ${identifier}`
+        : `No se pudo crear la cuenta con ${identifier}`,
+    );
+  }
+
+  const userId = authResult.data.user.id;
+
+  try {
+    const profile = await prisma.$transaction(async (tx) => {
+      const createdProfile = await tx.profile.create({
+        data: { id: userId, fullName, role },
+      });
+
+      if (role === "technician") {
+        const existingTechnician = phone
+          ? await tx.technician.findFirst({ where: { phone, userId: null } })
+          : null;
+
+        if (existingTechnician) {
+          await tx.technician.update({
+            where: { id: existingTechnician.id },
+            data: { userId, name: fullName, isActive: true },
+          });
+        } else {
+          await tx.technician.create({
+            data: { userId, name: fullName, phone, isActive: true },
+          });
+        }
+      }
+
+      return createdProfile;
+    });
+
+    return { ...profile, email, phone };
+  } catch {
+    await supabaseAdmin.auth.admin.deleteUser(userId);
+    throw new AdminResourceError("No se pudo crear el perfil del usuario");
+  }
+};
