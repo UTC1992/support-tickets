@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import AdminLoading from "@/features/admin/components/AdminLoading";
-import AdminPageHeader from "@/features/admin/components/AdminPageHeader";
-import TicketManager from "@/features/admin/components/TicketManager";
-import { getAdminTicketCatalogs, listAdminTickets } from "@/features/admin/services/admin-service";
+import PageHeader from "@/features/navigation/components/PageHeader";
+import PageLoading from "@/features/navigation/components/PageLoading";
+import TicketManager from "@/features/tickets/components/TicketManager";
+import { getTicketCatalogs, listManagedTickets } from "@/features/tickets/services/ticket-service";
 
 const TicketsContent = async () => {
-  const [tickets, catalogs] = await Promise.all([listAdminTickets(), getAdminTicketCatalogs()]);
+  const [tickets, catalogs] = await Promise.all([listManagedTickets(), getTicketCatalogs()]);
   const initialTickets = tickets.map((ticket) => ({
     ...ticket,
     intakeDate: ticket.intakeDate.toISOString(),
@@ -13,9 +13,9 @@ const TicketsContent = async () => {
     completedAt: ticket.completedAt?.toISOString() ?? null,
   }));
 
-  return <><AdminPageHeader title="Soportes" description="Crea, asigna y actualiza los soportes registrados." /><TicketManager initialTickets={initialTickets} catalogs={catalogs} /></>;
+  return <><PageHeader title="Soportes" description="Crea, asigna y actualiza los soportes registrados." /><TicketManager initialTickets={initialTickets} catalogs={catalogs} /></>;
 };
 
-const TicketsPage = () => <Suspense fallback={<AdminLoading />}><TicketsContent /></Suspense>;
+const TicketsPage = () => <Suspense fallback={<PageLoading />}><TicketsContent /></Suspense>;
 
 export default TicketsPage;

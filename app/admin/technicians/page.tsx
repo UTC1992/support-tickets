@@ -1,15 +1,15 @@
 import { Suspense } from "react";
-import CatalogManager from "@/features/admin/components/CatalogManager";
-import AdminLoading from "@/features/admin/components/AdminLoading";
-import AdminPageHeader from "@/features/admin/components/AdminPageHeader";
-import { listAdminTechnicians } from "@/features/admin/services/admin-service";
+import CatalogManager from "@/features/catalogs/components/CatalogManager";
+import { listTechnicians } from "@/features/catalogs/services/catalog-service";
+import PageHeader from "@/features/navigation/components/PageHeader";
+import PageLoading from "@/features/navigation/components/PageLoading";
 
 const TechniciansContent = async () => {
-  const technicians = await listAdminTechnicians();
+  const technicians = await listTechnicians();
   const items = technicians.map((item) => ({ id: item.id, name: item.name, phone: item.phone, isActive: item.isActive, ticketCount: item._count.tickets }));
-  return <><AdminPageHeader title="Tecnicos" description="Personal disponible para asignar soportes." /><CatalogManager initialItems={items} resource="technicians" itemLabel="tecnico" secondaryField="phone" /></>;
+  return <><PageHeader title="Tecnicos" description="Personal disponible para asignar soportes." /><CatalogManager initialItems={items} resource="technicians" itemLabel="tecnico" secondaryField="phone" /></>;
 };
 
-const TechniciansPage = () => <Suspense fallback={<AdminLoading />}><TechniciansContent /></Suspense>;
+const TechniciansPage = () => <Suspense fallback={<PageLoading />}><TechniciansContent /></Suspense>;
 
 export default TechniciansPage;

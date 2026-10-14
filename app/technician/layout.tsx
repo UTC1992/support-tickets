@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import TechnicianAccess from "@/features/technician/components/TechnicianAccess";
+import TechnicianAccess from "@/features/navigation/components/TechnicianAccess";
 
 type TechnicianLayoutProps = { children: ReactNode };
 

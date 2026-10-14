@@ -14,7 +14,7 @@ const TechnicianShell = ({ children, technicianName }: TechnicianShellProps) => 
           <p className="text-xs font-semibold uppercase text-emerald-700">Exitcomp</p>
           <div className="flex items-center gap-2">
             <Headphones aria-hidden="true" className="size-4 shrink-0 text-zinc-500" />
-            <h1 className="truncate text-base font-semibold">Soportes asignados</h1>
+            <h1 className="truncate text-base font-semibold">Mis soportes</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">

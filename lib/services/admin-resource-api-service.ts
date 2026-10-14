@@ -17,6 +17,6 @@ const request = async <T>(path: string, options: RequestOptions) => {
   return result.item as T;
 };
 
-export const createAdminItem = <T>(resource: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}`, { method: "POST", body });
-export const updateAdminItem = <T>(resource: string, id: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}/${id}`, { method: "PATCH", body });
-export const deleteAdminItem = (resource: string, id: string) => request<void>(`/api/admin/${resource}/${id}`, { method: "DELETE" });
+export const createAdminResourceRequest = <T>(resource: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}`, { method: "POST", body });
+export const updateAdminResourceRequest = <T>(resource: string, id: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}/${id}`, { method: "PATCH", body });
+export const deleteAdminResourceRequest = (resource: string, id: string) => request<void>(`/api/admin/${resource}/${id}`, { method: "DELETE" });

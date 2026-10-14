@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import AssignedTicketList from "@/features/technician/components/AssignedTicketList";
-import listAssignedTickets from "@/features/technician/services/technician-service";
+import AssignedTicketList from "@/features/tickets/components/AssignedTicketList";
+import { listAssignedTickets } from "@/features/tickets/services/ticket-service";
 
 const AssignedTicketsContent = async () => {
   const tickets = await listAssignedTickets();

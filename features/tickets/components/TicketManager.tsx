@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
-import { createTicketRequest, deleteTicketRequest, updateTicketRequest } from "@/features/admin/services/ticket-api-service";
+import { createTicketRequest, deleteTicketRequest, updateTicketRequest } from "@/features/tickets/services/ticket-api-service";
 
 type CatalogOption = { id: string; name: string };
 type TicketItem = {

@@ -13,3 +13,12 @@ Separacion basica:
 - Servicios compartidos o de datos en `lib/services`.
 - Route Handlers en `app/api`.
 
+Organizacion por feature:
+
+- Las features representan funcionalidades del negocio, no roles de usuario.
+- Ejemplos: `features/tickets`, `features/users`, `features/catalogs`.
+- Los roles (`admin`, `office`, `technician`) se mantienen en rutas y reglas de
+  acceso; no deben convertirse en directorios principales dentro de `features`.
+- Una funcionalidad compartida por varios roles debe tener una sola
+  implementacion y adaptar sus acciones segun permisos.
+

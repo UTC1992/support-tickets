@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import TechnicianShell from "@/features/technician/components/TechnicianShell";
+import TechnicianShell from "@/features/navigation/components/TechnicianShell";
 import requireTechnician from "@/lib/auth/technician";
 
 type TechnicianAccessProps = { children: ReactNode };

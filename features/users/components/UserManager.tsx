@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { createAdminItem, deleteAdminItem, updateAdminItem } from "@/features/admin/services/admin-api-service";
+import { createAdminResourceRequest, deleteAdminResourceRequest, updateAdminResourceRequest } from "@/lib/services/admin-resource-api-service";
 
 type UserItem = {
   id: string;
@@ -45,10 +45,10 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
 
     try {
       if (editing) {
-        const updated = await updateAdminItem<UserItem>("profiles", editing.id, { fullName: body.fullName, role: body.role });
+        const updated = await updateAdminResourceRequest<UserItem>("profiles", editing.id, { fullName: body.fullName, role: body.role });
         setUsers((current) => current.map((user) => user.id === editing.id ? { ...user, ...updated, createdAt: user.createdAt } : user));
       } else {
-        const created = await createAdminItem<UserItem>("profiles", body);
+        const created = await createAdminResourceRequest<UserItem>("profiles", body);
         setUsers((current) => [...current, { ...created, createdAt: String(created.createdAt) }].sort((a, b) => a.fullName.localeCompare(b.fullName)));
       }
       setIsOpen(false);
@@ -62,7 +62,7 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
   const toggleActive = async (user: UserItem) => {
     setError(null);
     try {
-      const updated = await updateAdminItem<UserItem>("profiles", user.id, { isActive: !user.isActive });
+      const updated = await updateAdminResourceRequest<UserItem>("profiles", user.id, { isActive: !user.isActive });
       setUsers((current) => current.map((item) => item.id === user.id ? { ...item, isActive: updated.isActive } : item));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "No se pudo actualizar");
@@ -73,7 +73,7 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
     if (!window.confirm(`Eliminar el perfil de ${user.fullName}?`)) return;
     setError(null);
     try {
-      await deleteAdminItem("profiles", user.id);
+      await deleteAdminResourceRequest("profiles", user.id);
       setUsers((current) => current.filter((item) => item.id !== user.id));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "No se pudo eliminar");

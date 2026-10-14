@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import AdminShell from "@/features/admin/components/AdminShell";
+import AdminShell from "@/features/navigation/components/AdminShell";
 import requireAdmin from "@/lib/auth/admin";
 
 type AdminAccessProps = { children: ReactNode };

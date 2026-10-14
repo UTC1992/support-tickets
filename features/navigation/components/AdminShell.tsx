@@ -36,7 +36,7 @@ const AdminShell = ({ children, userName }: AdminShellProps) => {
             </form>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Administracion">
+        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Menu de administracion">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);

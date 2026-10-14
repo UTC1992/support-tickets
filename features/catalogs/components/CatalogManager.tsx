@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { createAdminItem, deleteAdminItem, updateAdminItem } from "@/features/admin/services/admin-api-service";
+import { createAdminResourceRequest, deleteAdminResourceRequest, updateAdminResourceRequest } from "@/lib/services/admin-resource-api-service";
 
 type CatalogItem = {
   id: string;
@@ -49,10 +49,10 @@ const CatalogManager = ({ initialItems, resource, itemLabel, secondaryField }: C
 
     try {
       if (editing) {
-        const updated = await updateAdminItem<Omit<CatalogItem, "ticketCount"> & { _count?: { tickets: number } }>(resource, editing.id, body);
+        const updated = await updateAdminResourceRequest<Omit<CatalogItem, "ticketCount"> & { _count?: { tickets: number } }>(resource, editing.id, body);
         setItems((current) => current.map((item) => item.id === editing.id ? { ...item, ...updated, ticketCount: updated._count?.tickets ?? item.ticketCount } : item));
       } else {
-        const created = await createAdminItem<Omit<CatalogItem, "ticketCount"> & { _count?: { tickets: number } }>(resource, body);
+        const created = await createAdminResourceRequest<Omit<CatalogItem, "ticketCount"> & { _count?: { tickets: number } }>(resource, body);
         setItems((current) => [...current, { ...created, ticketCount: created._count?.tickets ?? 0 }].sort((a, b) => a.name.localeCompare(b.name)));
       }
       setIsOpen(false);
@@ -66,7 +66,7 @@ const CatalogManager = ({ initialItems, resource, itemLabel, secondaryField }: C
   const toggleActive = async (item: CatalogItem) => {
     setError(null);
     try {
-      const updated = await updateAdminItem<CatalogItem>(resource, item.id, { isActive: !item.isActive });
+      const updated = await updateAdminResourceRequest<CatalogItem>(resource, item.id, { isActive: !item.isActive });
       setItems((current) => current.map((currentItem) => currentItem.id === item.id ? { ...currentItem, isActive: updated.isActive } : currentItem));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "No se pudo actualizar");
@@ -77,7 +77,7 @@ const CatalogManager = ({ initialItems, resource, itemLabel, secondaryField }: C
     if (!window.confirm(`Eliminar ${item.name}?`)) return;
     setError(null);
     try {
-      await deleteAdminItem(resource, item.id);
+      await deleteAdminResourceRequest(resource, item.id);
       setItems((current) => current.filter((currentItem) => currentItem.id !== item.id));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "No se pudo eliminar");
