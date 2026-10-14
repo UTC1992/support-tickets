@@ -3,7 +3,10 @@ import "server-only";
 import requireBackOffice from "@/lib/auth/back-office";
 import requireTechnician from "@/lib/auth/technician";
 import prisma from "@/lib/db/prisma";
-import { listTickets } from "@/lib/services/tickets";
+import {
+  listTechnicianTickets,
+  listTickets,
+} from "@/lib/services/tickets";
 
 export const listManagedTickets = async () => {
   await requireBackOffice();
@@ -24,24 +27,5 @@ export const getTicketCatalogs = async () => {
 export const listAssignedTickets = async () => {
   const { technician } = await requireTechnician();
 
-  return prisma.ticket.findMany({
-    where: { technicianId: technician.id },
-    orderBy: [{ scheduledAt: "asc" }, { intakeDate: "desc" }],
-    take: 100,
-    select: {
-      id: true,
-      clientName: true,
-      clientPhone: true,
-      clientIp: true,
-      sector: true,
-      status: true,
-      priority: true,
-      intakeDate: true,
-      scheduledAt: true,
-      observation: true,
-      technicianNotes: true,
-      zone: { select: { name: true } },
-      supportType: { select: { name: true } },
-    },
-  });
+  return listTechnicianTickets(technician.id, { limit: "20", page: "1" });
 };

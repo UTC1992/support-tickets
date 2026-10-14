@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "@/lib/db/prisma";
-import { listTickets } from "@/lib/services/tickets";
+import { listTechnicianTickets, listTickets } from "@/lib/services/tickets";
 
 vi.mock("@/lib/db/prisma", () => ({
   default: {
@@ -42,5 +42,15 @@ describe("listTickets", () => {
         totalPages: 3,
       },
     });
+  });
+
+  it("fuerza el tecnico autenticado aunque el cliente envie otro filtro", async () => {
+    await listTechnicianTickets("technician-authenticated", {
+      technicianId: "technician-from-browser",
+    });
+
+    expect(prisma.ticket.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ technicianId: "technician-authenticated" }),
+    }));
   });
 });

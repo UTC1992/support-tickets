@@ -53,3 +53,8 @@ export type TicketFilterValues = {
 };
 
 export type TicketFilterField = Exclude<keyof TicketFilterValues, "page" | "pageSize">;
+
+export type TechnicianTicketFilterValues = Pick<
+  TicketFilterValues,
+  "page" | "pageSize" | "search" | "status"
+>;

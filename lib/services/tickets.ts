@@ -78,6 +78,11 @@ export const listTickets = async (filters: TicketFilters) => {
   };
 };
 
+export const listTechnicianTickets = async (
+  technicianId: string,
+  filters: TicketFilters,
+) => listTickets({ ...filters, technicianId });
+
 export const listTicketsForExport = async (filters: TicketFilters) => {
   return prisma.ticket.findMany({
     where: buildTicketWhere(filters),
@@ -155,6 +160,44 @@ export const updateTicket = async (id: string, input: unknown) => {
   });
 };
 
+export const updateTechnicianTicket = async (
+  id: string,
+  technicianId: string,
+  actorId: string,
+  input: unknown,
+) => {
+  const payload = readObject(input);
+
+  return prisma.$transaction(async (tx) => {
+    const previous = await tx.ticket.findFirst({
+      where: { id, technicianId },
+    });
+
+    if (!previous) {
+      throw new Error("Assigned ticket not found");
+    }
+
+    const data = parseTechnicianUpdateInput(payload, previous.status);
+    const ticket = await tx.ticket.update({
+      where: { id, technicianId },
+      data: { ...data, updatedBy: actorId },
+      include: ticketInclude,
+    });
+
+    await tx.ticketHistory.create({
+      data: {
+        ticketId: ticket.id,
+        actorId,
+        eventType: "technician_updated",
+        oldValue: previous as unknown as Prisma.InputJsonValue,
+        newValue: ticket as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return ticket;
+  });
+};
+
 export const deleteTicket = async (id: string) => {
   const ticket = await prisma.ticket.findUnique({ where: { id }, select: { id: true } });
 
@@ -209,6 +252,60 @@ const parseUpdateInput = (input: unknown): Prisma.TicketUpdateInput => {
   if ("intakeDate" in payload) data.intakeDate = parseDate(readRequiredString(payload, "intakeDate"));
   if ("scheduledAt" in payload) data.scheduledAt = parseOptionalDateTime(payload, "scheduledAt");
   if ("completedAt" in payload) data.completedAt = parseOptionalDateTime(payload, "completedAt");
+
+  return data;
+};
+
+const technicianStatusTransitions: Record<TicketStatusInput, TicketStatusInput[]> = {
+  pending: ["in_progress", "completed", "not_completed", "rescheduled"],
+  assigned: ["in_progress", "completed", "not_completed", "rescheduled"],
+  in_progress: ["completed", "not_completed", "rescheduled"],
+  completed: [],
+  not_completed: ["in_progress", "completed", "rescheduled"],
+  rescheduled: ["in_progress", "completed", "not_completed", "rescheduled"],
+  cancelled: [],
+};
+
+const parseTechnicianUpdateInput = (
+  payload: Record<string, unknown>,
+  currentStatus: TicketStatusInput,
+): Prisma.TicketUpdateInput => {
+  const data: Prisma.TicketUpdateInput = {};
+  const status = "status" in payload
+    ? parseStatus(readRequiredString(payload, "status"))
+    : currentStatus;
+
+  if (status !== currentStatus) {
+    if (!technicianStatusTransitions[currentStatus].includes(status)) {
+      throw new Error(`Invalid technician status transition: ${currentStatus} to ${status}`);
+    }
+
+    data.status = status;
+  }
+
+  assignNullableString(data, "technicianNotes", payload);
+  assignNullableString(data, "resultNotes", payload);
+
+  if (["completed", "not_completed", "rescheduled"].includes(status)) {
+    const resultNotes = readRequiredString(payload, "resultNotes");
+    data.resultNotes = resultNotes;
+  }
+
+  if (status === "completed") {
+    data.completedAt = new Date();
+  } else if (status !== currentStatus) {
+    data.completedAt = null;
+  }
+
+  if (status === "rescheduled") {
+    const scheduledAt = parseOptionalDateTime(payload, "scheduledAt");
+
+    if (!(scheduledAt instanceof Date)) {
+      throw new Error("scheduledAt is required");
+    }
+
+    data.scheduledAt = scheduledAt;
+  }
 
   return data;
 };

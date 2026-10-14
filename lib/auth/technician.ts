@@ -5,12 +5,21 @@ import { connection } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/db/prisma";
 
-const requireTechnician = async () => {
-  await connection();
+export class TechnicianAccessError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "TechnicianAccessError";
+    this.status = status;
+  }
+}
+
+export const assertTechnician = async () => {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login?redirectTo=/technician/tickets");
+    throw new TechnicianAccessError("Debes iniciar sesion", 401);
   }
 
   const profile = await prisma.profile.findUnique({
@@ -19,7 +28,7 @@ const requireTechnician = async () => {
   });
 
   if (!profile?.isActive || profile.role !== "technician") {
-    redirect("/access-denied");
+    throw new TechnicianAccessError("No tienes permisos de tecnico", 403);
   }
 
   const technician = await prisma.technician.findUnique({
@@ -28,10 +37,23 @@ const requireTechnician = async () => {
   });
 
   if (!technician?.isActive) {
-    redirect("/access-denied");
+    throw new TechnicianAccessError("No tienes un tecnico activo asociado", 403);
   }
 
   return { profile, technician };
+};
+
+const requireTechnician = async () => {
+  try {
+    await connection();
+    return await assertTechnician();
+  } catch (error) {
+    if (error instanceof TechnicianAccessError && error.status === 401) {
+      redirect("/login?redirectTo=/technician/tickets");
+    }
+
+    redirect("/access-denied");
+  }
 };
 
 export default requireTechnician;

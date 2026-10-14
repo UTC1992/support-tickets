@@ -1,16 +1,20 @@
 import { Suspense } from "react";
-import AssignedTicketList from "@/features/tickets/components/AssignedTicketList";
+import TechnicianTicketManager from "@/features/tickets/components/TechnicianTicketManager";
 import { listAssignedTickets } from "@/features/tickets/services/ticket-service";
 
 const AssignedTicketsContent = async () => {
-  const tickets = await listAssignedTickets();
-  const serializedTickets = tickets.map((ticket) => ({
+  const ticketPage = await listAssignedTickets();
+  const serializedTickets = ticketPage.tickets.map((ticket) => ({
     ...ticket,
-    intakeDate: ticket.intakeDate.toISOString().slice(0, 10),
+    intakeDate: ticket.intakeDate.toISOString(),
     scheduledAt: ticket.scheduledAt?.toISOString() ?? null,
+    completedAt: ticket.completedAt?.toISOString() ?? null,
   }));
 
-  return <AssignedTicketList tickets={serializedTickets} />;
+  return <TechnicianTicketManager initialData={{
+    tickets: serializedTickets,
+    pagination: ticketPage.pagination,
+  }} />;
 };
 
 const TechnicianTicketsPage = () => (

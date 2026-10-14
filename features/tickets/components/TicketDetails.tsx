@@ -7,7 +7,8 @@ import type { TicketItem } from "@/features/tickets/types";
 type TicketDetailsProps = {
   ticket: TicketItem;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
+  editLabel?: string;
 };
 
 const formatDate = (value: string | null) => value
@@ -26,7 +27,12 @@ const Detail = ({ label, value }: { label: string; value: string | null | undefi
   </div>
 );
 
-const TicketDetails = ({ ticket, onClose, onEdit }: TicketDetailsProps) => (
+const TicketDetails = ({
+  ticket,
+  onClose,
+  onEdit,
+  editLabel = "Editar",
+}: TicketDetailsProps) => (
   <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="ticket-details-title">
     <section className="mx-auto min-h-full w-full bg-white p-5 shadow-xl sm:min-h-0 sm:max-w-2xl sm:rounded-md">
       <div className="mb-5 flex items-start justify-between gap-3">
@@ -59,7 +65,7 @@ const TicketDetails = ({ ticket, onClose, onEdit }: TicketDetailsProps) => (
 
       <div className="sticky bottom-0 mt-6 flex flex-col-reverse gap-2 border-t border-zinc-200 bg-white pt-4 sm:flex-row sm:justify-end">
         <button type="button" onClick={onClose} className="h-11 rounded-md border border-zinc-300 px-4 text-sm font-medium">Cerrar</button>
-        <button type="button" onClick={onEdit} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white"><Pencil className="size-4" /> Editar</button>
+        {onEdit ? <button type="button" onClick={onEdit} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white"><Pencil className="size-4" /> {editLabel}</button> : null}
       </div>
     </section>
   </div>
