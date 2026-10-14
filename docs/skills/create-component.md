@@ -7,6 +7,7 @@ Antes de crear un componente:
 3. Usar arrow function.
 4. Exportar default al final si es el unico export.
 5. Mantenerlo enfocado en UI; no poner llamadas directas a Prisma.
+6. Revisar `docs/rules/frontend.md` y construir el componente mobile-first.
 
 Ejemplo:
 

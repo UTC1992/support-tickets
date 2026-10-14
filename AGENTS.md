@@ -5,6 +5,7 @@ de cambio:
 
 - Estructura de carpetas: `docs/rules/project-structure.md`
 - Nombres, exports y commits: `docs/rules/naming.md`
+- UI responsive y mobile-first: `docs/rules/frontend.md`
 - Componentes React: `docs/skills/create-component.md`
 - Hooks React: `docs/skills/create-hook.md`
 - Servicios y logica de datos: `docs/skills/create-service.md`
@@ -17,6 +18,9 @@ Reglas rapidas:
 - Servicios de feature en `features/<feature>/services`.
 - Servicios compartidos en `lib/services`.
 - Route Handlers en `app/api`.
+- Construir la UI mobile-first y mejorarla progresivamente con breakpoints.
+- Para cambios funcionales, escribir primero la prueba que describe el caso de
+  uso y despues implementar hasta que pase.
 - Usar arrow functions por defecto.
 - Usar `export default` al final cuando el archivo tenga un solo export
   principal, excepto Route Handlers de Next que requieren `GET`, `POST`,
