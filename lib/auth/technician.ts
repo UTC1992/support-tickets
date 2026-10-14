@@ -19,7 +19,7 @@ export const assertTechnician = async () => {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new TechnicianAccessError("Debes iniciar sesion", 401);
+    throw new TechnicianAccessError("Debes iniciar sesión", 401);
   }
 
   const profile = await prisma.profile.findUnique({
@@ -28,7 +28,7 @@ export const assertTechnician = async () => {
   });
 
   if (!profile?.isActive || profile.role !== "technician") {
-    throw new TechnicianAccessError("No tienes permisos de tecnico", 403);
+    throw new TechnicianAccessError("No tienes permisos de técnico", 403);
   }
 
   const technician = await prisma.technician.findUnique({
@@ -37,7 +37,7 @@ export const assertTechnician = async () => {
   });
 
   if (!technician?.isActive) {
-    throw new TechnicianAccessError("No tienes un tecnico activo asociado", 403);
+    throw new TechnicianAccessError("No tienes un técnico activo asociado", 403);
   }
 
   return { profile, technician };

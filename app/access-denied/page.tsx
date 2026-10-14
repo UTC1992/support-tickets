@@ -7,7 +7,7 @@ const AccessDeniedPage = () => (
       <h1 className="mt-4 text-xl font-semibold text-zinc-950">Acceso restringido</h1>
       <p className="mt-2 text-sm text-zinc-600">Tu cuenta no tiene acceso a esta seccion.</p>
       <form action="/api/auth/logout" method="post" className="mt-5">
-        <button type="submit" className="h-10 w-full rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700">Cerrar sesion</button>
+        <button type="submit" className="h-10 w-full rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700">Cerrar sesión</button>
       </form>
     </div>
   </main>

@@ -23,7 +23,12 @@ const listUsers = async () => {
   const identities = new Map(
     data.users.map((user) => [
       user.id,
-      { email: user.email ?? null, phone: user.phone ?? null },
+      user.user_metadata.auth_method === "phone" || user.phone
+        ? {
+            email: null,
+            phone: user.user_metadata.login_phone ?? user.phone ?? null,
+          }
+        : { email: user.email ?? null, phone: null },
     ]),
   );
 

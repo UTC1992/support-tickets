@@ -56,7 +56,7 @@ describe("TechnicianTicketManager", () => {
 
     expect(screen.getByText("Cliente asignado")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /llamar/i })).toHaveAttribute("href", "tel:0999999999");
-    fireEvent.click(screen.getByRole("button", { name: /iniciar atencion/i }));
+    fireEvent.click(screen.getByRole("button", { name: /iniciar atención/i }));
 
     await waitFor(() => {
       expect(updateTechnicianTicketRequest).toHaveBeenCalledWith("ticket-1", {
@@ -75,6 +75,6 @@ describe("TechnicianTicketManager", () => {
     expect(screen.getByLabelText("Notas tecnicas")).toBeInTheDocument();
     expect(screen.getByLabelText("Resultado")).toBeInTheDocument();
     expect(screen.queryByLabelText("Cliente")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Tecnico")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Técnico")).not.toBeInTheDocument();
   });
 });

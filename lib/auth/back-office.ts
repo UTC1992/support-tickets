@@ -19,7 +19,7 @@ export const assertBackOffice = async () => {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new BackOfficeAccessError("Debes iniciar sesion", 401);
+    throw new BackOfficeAccessError("Debes iniciar sesión", 401);
   }
 
   const profile = await prisma.profile.findUnique({

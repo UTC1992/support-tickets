@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import PasswordInput from "@/features/auth/components/PasswordInput";
 import { signInWithPassword } from "@/features/auth/services/auth-service";
+import { formatPhoneForDisplay } from "@/lib/services/phone";
 
 const LoginForm = () => {
   const router = useRouter();
@@ -25,7 +27,7 @@ const LoginForm = () => {
     setIsSubmitting(false);
 
     if (authError) {
-      setError("Correo, telefono o contrasena incorrectos");
+      setError("Correo, teléfono o contraseña incorrectos");
       return;
     }
 
@@ -39,46 +41,45 @@ const LoginForm = () => {
       className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm"
     >
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-zinc-950">Iniciar sesion</h1>
+        <h1 className="text-xl font-semibold text-zinc-950">Iniciar sesión</h1>
         <p className="text-sm text-zinc-600">Ingresa con tu cuenta autorizada.</p>
       </div>
 
       {passwordUpdated ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Contrasena creada. Ya puedes iniciar sesion.
+          Contraseña creada. Ya puedes iniciar sesión.
         </p>
       ) : null}
 
       {invalidInvite ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          La invitacion vencio o no es valida.
+          La invitación venció o no es válida.
         </p>
       ) : null}
 
       <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">
-        Correo o telefono
+        Correo o teléfono
         <input
           className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none transition focus:border-zinc-900"
           type="text"
           autoComplete="username"
-          placeholder="correo@empresa.com o +593..."
+          placeholder="correo@empresa.com o 0999999999"
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
+          onBlur={() => {
+            if (!identifier.includes("@")) setIdentifier(formatPhoneForDisplay(identifier));
+          }}
           required
         />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">
-        Contrasena
-        <input
-          className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none transition focus:border-zinc-900"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-      </label>
+      <PasswordInput
+        label="Contraseña"
+        autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        required
+      />
 
       {error ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

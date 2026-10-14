@@ -87,7 +87,7 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
         <label className="relative block">
           <Search aria-hidden="true" className="absolute left-3 top-3.5 size-4 text-zinc-400" />
           <span className="sr-only">Buscar soportes</span>
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cliente, telefono, IP o sector" className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cliente, teléfono, IP o sector" className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base" />
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <label>
@@ -113,7 +113,7 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
 
       <div className="space-y-3">
         {tickets.length === 0 ? (
-          <p className="rounded-md border border-zinc-200 bg-white px-4 py-12 text-center text-sm text-zinc-500">No tienes soportes que coincidan con la busqueda.</p>
+          <p className="rounded-md border border-zinc-200 bg-white px-4 py-12 text-center text-sm text-zinc-500">No tienes soportes que coincidan con la búsqueda.</p>
         ) : tickets.map((ticket) => (
           <article key={ticket.id} className="rounded-md border border-zinc-200 bg-white p-4">
             <div className="flex items-start justify-between gap-3">
@@ -125,7 +125,7 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
             </div>
 
             <dl className="mt-4 grid gap-2 text-sm text-zinc-700 sm:grid-cols-2">
-              <div className="flex items-center gap-2"><MapPin aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.zone?.name ?? ticket.sector ?? "Sin ubicacion"}</span></div>
+              <div className="flex items-center gap-2"><MapPin aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.zone?.name ?? ticket.sector ?? "Sin ubicación"}</span></div>
               {ticket.clientPhone ? <div className="flex items-center gap-2"><Phone aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><a href={`tel:${ticket.clientPhone}`} aria-label={`Llamar a ${ticket.clientName}`} className="font-medium text-emerald-700">{ticket.clientPhone}</a></div> : null}
               {ticket.clientIp ? <div className="flex items-center gap-2"><Network aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.clientIp}</span></div> : null}
               <div className="flex items-center gap-2"><CalendarClock aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{formatDate(ticket.scheduledAt ?? ticket.intakeDate)}</span></div>
@@ -135,11 +135,11 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
               <span className="rounded bg-amber-50 px-2 py-1 font-medium text-amber-800">Prioridad: {getOptionLabel(ticketPriorities, ticket.priority)}</span>
             </div>
 
-            {ticket.observation ? <div className="mt-4 border-t border-zinc-100 pt-3"><p className="text-xs font-medium uppercase text-zinc-500">Observacion</p><p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700">{ticket.observation}</p></div> : null}
+            {ticket.observation ? <div className="mt-4 border-t border-zinc-100 pt-3"><p className="text-xs font-medium uppercase text-zinc-500">Observación</p><p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700">{ticket.observation}</p></div> : null}
 
             <div className="mt-4 grid gap-2 border-t border-zinc-100 pt-3 sm:flex sm:justify-end">
               <button type="button" onClick={() => openDetails(ticket)} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-700"><Eye aria-hidden="true" className="size-4" /> Ver detalle</button>
-              {canStart(ticket) ? <button type="button" onClick={() => startTicket(ticket)} disabled={isSaving} aria-label={`Iniciar atencion de ${ticket.clientName}`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-800 disabled:opacity-50"><Play aria-hidden="true" className="size-4" /> Iniciar atencion</button> : null}
+              {canStart(ticket) ? <button type="button" onClick={() => startTicket(ticket)} disabled={isSaving} aria-label={`Iniciar atención de ${ticket.clientName}`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-emerald-700 px-3 text-sm font-medium text-emerald-800 disabled:opacity-50"><Play aria-hidden="true" className="size-4" /> Iniciar atención</button> : null}
               {canResolve(ticket) ? <button type="button" onClick={() => openForm(ticket)} aria-label={`Registrar resultado de ${ticket.clientName}`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-zinc-900 px-3 text-sm font-medium text-white"><Wrench aria-hidden="true" className="size-4" /> Registrar resultado</button> : null}
             </div>
           </article>
@@ -147,9 +147,9 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => setPage(pagination.page - 1)} disabled={pagination.page <= 1 || isLoading} aria-label="Pagina anterior" className="grid size-11 place-items-center rounded-md border border-zinc-300 bg-white disabled:opacity-40"><ChevronLeft className="size-5" /></button>
-        <p className="text-sm text-zinc-600">Pagina {pagination.page} de {pagination.totalPages}</p>
-        <button type="button" onClick={() => setPage(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages || isLoading} aria-label="Pagina siguiente" className="grid size-11 place-items-center rounded-md border border-zinc-300 bg-white disabled:opacity-40"><ChevronRight className="size-5" /></button>
+        <button type="button" onClick={() => setPage(pagination.page - 1)} disabled={pagination.page <= 1 || isLoading} aria-label="Página anterior" className="grid size-11 place-items-center rounded-md border border-zinc-300 bg-white disabled:opacity-40"><ChevronLeft className="size-5" /></button>
+        <p className="text-sm text-zinc-600">Página {pagination.page} de {pagination.totalPages}</p>
+        <button type="button" onClick={() => setPage(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages || isLoading} aria-label="Página siguiente" className="grid size-11 place-items-center rounded-md border border-zinc-300 bg-white disabled:opacity-40"><ChevronRight className="size-5" /></button>
       </div>
 
       {viewing ? <TicketDetails ticket={viewing} onClose={closeDetails} onEdit={canResolve(viewing) ? editFromDetails : undefined} editLabel="Registrar resultado" /> : null}

@@ -73,8 +73,8 @@ describe("TicketManager", () => {
     fireEvent.click(screen.getByRole("button", { name: /ver soporte/i }));
 
     expect(screen.getByText("Detalle completo del soporte")).toBeInTheDocument();
-    expect(screen.getByText("Fecha de finalizacion")).toBeInTheDocument();
-    expect(screen.getByText("Notas del tecnico")).toBeInTheDocument();
+    expect(screen.getByText("Fecha de finalización")).toBeInTheDocument();
+    expect(screen.getByText("Notas del técnico")).toBeInTheDocument();
     expect(screen.getByText("Resultado")).toBeInTheDocument();
   });
 });

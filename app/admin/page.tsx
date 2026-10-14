@@ -5,7 +5,7 @@ import PageLoading from "@/features/navigation/components/PageLoading";
 
 const DashboardContent = async () => {
   const summary = await getDashboardSummary();
-  return <DashboardSummary summary={summary} ticketsHref="/admin/tickets" description="Estado general de la gestion de soportes." />;
+  return <DashboardSummary summary={summary} ticketsHref="/admin/tickets" description="Estado general de la gestión de soportes." />;
 };
 
 const AdminPage = () => <Suspense fallback={<PageLoading />}><DashboardContent /></Suspense>;

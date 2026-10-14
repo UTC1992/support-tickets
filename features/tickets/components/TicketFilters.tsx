@@ -40,7 +40,7 @@ const TicketFilters = ({
           <input
             value={filters.search}
             onChange={(event) => onChange("search", event.target.value)}
-            placeholder="Cliente, telefono, IP o sector"
+            placeholder="Cliente, teléfono, IP o sector"
             className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base outline-none focus:border-zinc-900"
           />
         </label>
@@ -65,7 +65,7 @@ const TicketFilters = ({
               {ticketStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
             </select>
           </label>
-          <label className="text-sm font-medium">Tecnico
+          <label className="text-sm font-medium">Técnico
             <select value={filters.technicianId} onChange={(event) => onChange("technicianId", event.target.value)} className="mt-1 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base">
               <option value="">Todos</option>
               {catalogs.technicians.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}

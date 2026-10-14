@@ -44,22 +44,22 @@ const TicketDetails = ({
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2">
-        <Detail label="Telefono" value={ticket.clientPhone} />
+        <Detail label="Teléfono" value={ticket.clientPhone} />
         <Detail label="IP" value={ticket.clientIp} />
         <Detail label="Sector" value={ticket.sector} />
         <Detail label="Zona" value={ticket.zone?.name} />
         <Detail label="Tipo de soporte" value={ticket.supportType?.name} />
-        <Detail label="Tecnico" value={ticket.technician?.name ?? "Sin asignar"} />
+        <Detail label="Técnico" value={ticket.technician?.name ?? "Sin asignar"} />
         <Detail label="Estado" value={getOptionLabel(ticketStatuses, ticket.status)} />
         <Detail label="Prioridad" value={getOptionLabel(ticketPriorities, ticket.priority)} />
         <Detail label="Fecha de ingreso" value={formatIntakeDate(ticket.intakeDate)} />
         <Detail label="Fecha programada" value={formatDate(ticket.scheduledAt)} />
-        <Detail label="Fecha de finalizacion" value={formatDate(ticket.completedAt)} />
+        <Detail label="Fecha de finalización" value={formatDate(ticket.completedAt)} />
       </dl>
 
       <div className="mt-4 space-y-4">
-        <Detail label="Observacion" value={ticket.observation} />
-        <Detail label="Notas del tecnico" value={ticket.technicianNotes} />
+        <Detail label="Observación" value={ticket.observation} />
+        <Detail label="Notas del técnico" value={ticket.technicianNotes} />
         <Detail label="Resultado" value={ticket.resultNotes} />
       </div>
 

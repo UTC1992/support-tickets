@@ -25,13 +25,13 @@ vi.mock("@/lib/auth/supabase-browser", () => ({
 }));
 
 const submitPassword = () => {
-  fireEvent.change(screen.getByLabelText("Contrasena"), {
+  fireEvent.change(screen.getByLabelText("Contraseña"), {
     target: { value: "NuevaClave123" },
   });
-  fireEvent.change(screen.getByLabelText("Confirmar contrasena"), {
+  fireEvent.change(screen.getByLabelText("Confirmar contraseña"), {
     target: { value: "NuevaClave123" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Guardar contrasena" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar contraseña" }));
 };
 
 describe("SetPasswordForm", () => {
@@ -56,7 +56,7 @@ describe("SetPasswordForm", () => {
 
     submitPassword();
 
-    expect(await screen.findByText("No se pudo cambiar la contrasena")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Guardar contrasena" })).toBeEnabled();
+    expect(await screen.findByText("No se pudo cambiar la contraseña")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guardar contraseña" })).toBeEnabled();
   });
 });

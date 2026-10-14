@@ -1,4 +1,5 @@
 import createSupabaseBrowserClient from "@/lib/auth/supabase-browser";
+import { getPhoneAuthEmail } from "@/lib/services/phone";
 
 export const signInWithPassword = async (identifier: string, password: string) => {
   const supabase = createSupabaseBrowserClient();
@@ -12,7 +13,7 @@ export const signInWithPassword = async (identifier: string, password: string) =
   }
 
   return supabase.auth.signInWithPassword({
-    phone: normalizedIdentifier.replace(/[\s()-]/g, ""),
+    email: getPhoneAuthEmail(normalizedIdentifier),
     password,
   });
 };

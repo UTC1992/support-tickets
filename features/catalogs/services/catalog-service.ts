@@ -6,6 +6,7 @@ import prisma from "@/lib/db/prisma";
 export const listTechnicians = async () => {
   await requireAdmin();
   return prisma.technician.findMany({
+    where: { isActive: true },
     orderBy: { name: "asc" },
     select: { id: true, name: true, phone: true, isActive: true, _count: { select: { tickets: true } } },
   });

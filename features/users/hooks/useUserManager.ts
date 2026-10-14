@@ -56,7 +56,14 @@ const useUserManager = (initialUsers: UserItem[]) => {
     resetMutations();
     if (editing) {
       updateMutation.mutate(
-        { id: editing.id, body: { fullName: body.fullName, role: body.role } },
+        {
+          id: editing.id,
+          body: {
+            fullName: body.fullName,
+            role: body.role,
+            ...(editing.phone ? { phone: body.phone } : {}),
+          },
+        },
         {
           onSuccess: (updated) => {
             setUsers((current) => current.map((user) => user.id === editing.id

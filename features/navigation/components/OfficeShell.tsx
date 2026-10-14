@@ -26,7 +26,7 @@ const OfficeShell = ({ children, userName }: OfficeShellProps) => {
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-zinc-600 sm:inline">{userName}</span>
             <form action="/api/auth/logout" method="post">
-              <button type="submit" title="Cerrar sesion" aria-label="Cerrar sesion" className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition hover:bg-zinc-100">
+              <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión" className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition hover:bg-zinc-100">
                 <LogOut aria-hidden="true" className="size-4" />
               </button>
             </form>

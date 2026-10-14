@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/features/auth/components/PasswordInput";
 import createSupabaseBrowserClient from "@/lib/auth/supabase-browser";
 
 const SetPasswordForm = () => {
@@ -16,7 +17,7 @@ const SetPasswordForm = () => {
     setError(null);
 
     if (password !== confirmation) {
-      setError("Las contrasenas no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
 
@@ -31,7 +32,7 @@ const SetPasswordForm = () => {
       if (updateError) {
         setError(
           updateError.message.toLowerCase().includes("session")
-            ? "La sesion vencio. Inicia sesion nuevamente con tu contrasena temporal"
+            ? "La sesión venció. Inicia sesión nuevamente con tu contraseña temporal"
             : updateError.message,
         );
         return;
@@ -40,7 +41,7 @@ const SetPasswordForm = () => {
       router.replace("/");
       router.refresh();
     } catch {
-      setError("No se pudo cambiar la contrasena");
+      setError("No se pudo cambiar la contraseña");
     } finally {
       setIsSubmitting(false);
     }
@@ -49,17 +50,13 @@ const SetPasswordForm = () => {
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4 rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-zinc-950">Cambiar contrasena</h1>
-        <p className="text-sm text-zinc-600">Por seguridad, reemplaza la contrasena temporal.</p>
+        <h1 className="text-xl font-semibold text-zinc-950">Cambiar contraseña</h1>
+        <p className="text-sm text-zinc-600">Por seguridad, reemplaza la contraseña temporal.</p>
       </div>
-      <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">Contrasena
-        <input type="password" minLength={8} autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none focus:border-zinc-900" />
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">Confirmar contrasena
-        <input type="password" minLength={8} autoComplete="new-password" required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none focus:border-zinc-900" />
-      </label>
+      <PasswordInput label="Contraseña" minLength={8} autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+      <PasswordInput label="Confirmar contraseña" minLength={8} autoComplete="new-password" required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
       {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-      <button type="submit" disabled={isSubmitting} className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400">{isSubmitting ? "Guardando..." : "Guardar contrasena"}</button>
+      <button type="submit" disabled={isSubmitting} className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400">{isSubmitting ? "Guardando..." : "Guardar contraseña"}</button>
     </form>
   );
 };

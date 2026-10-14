@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Exitcomp | Gestion de soportes",
-  description: "Administracion de soportes tecnicos de Exitcomp",
+  description: "Administración de soportes técnicos de Exitcomp",
 };
 
 const RootLayout = ({ children }: LayoutProps<"/">) => {

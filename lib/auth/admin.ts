@@ -19,7 +19,7 @@ export const assertAdmin = async () => {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new AdminAccessError("Debes iniciar sesion", 401);
+    throw new AdminAccessError("Debes iniciar sesión", 401);
   }
 
   const profile = await prisma.profile.findUnique({

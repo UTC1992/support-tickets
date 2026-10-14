@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 const navItems = [
   { href: "/admin", label: "Inicio", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Soportes", icon: Headphones },
-  { href: "/admin/technicians", label: "Tecnicos", icon: Users },
+  { href: "/admin/technicians", label: "Técnicos", icon: Users },
   { href: "/admin/zones", label: "Zonas", icon: MapPin },
   { href: "/admin/support-types", label: "Tipos", icon: Tags },
   { href: "/admin/users", label: "Usuarios", icon: UserRoundCog },
@@ -30,13 +30,13 @@ const AdminShell = ({ children, userName }: AdminShellProps) => {
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-zinc-600 sm:inline">{userName}</span>
             <form action="/api/auth/logout" method="post">
-              <button type="submit" title="Cerrar sesion" aria-label="Cerrar sesion" className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition hover:bg-zinc-100">
+              <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión" className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition hover:bg-zinc-100">
                 <LogOut aria-hidden="true" className="size-4" />
               </button>
             </form>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Menu de administracion">
+        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Menú de administración">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);

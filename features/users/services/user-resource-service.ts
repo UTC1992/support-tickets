@@ -4,6 +4,7 @@ import type { AppRole, Prisma } from "@/generated/prisma/client";
 import { assertAdmin } from "@/lib/auth/admin";
 import createSupabaseAdminClient from "@/lib/auth/supabase-admin";
 import prisma from "@/lib/db/prisma";
+import normalizePhone, { getPhoneAuthEmail } from "@/lib/services/phone";
 
 export class UserResourceError extends Error {
   constructor(message: string) {
@@ -22,31 +23,30 @@ export const createUser = async (input: unknown) => {
   const phone = authMethod === "phone" ? readPhone(payload) : null;
   const password = readPassword(payload);
   const supabaseAdmin = createSupabaseAdminClient();
+  const matchingTechnicians = phone ? await findTechniciansByPhone(phone) : [];
+  const linkedTechnician = matchingTechnicians.find((technician) => technician.userId);
+  const availableTechnician = matchingTechnicians.find((technician) => !technician.userId);
 
-  if (phone) {
-    const linkedTechnician = await prisma.technician.findFirst({
-      where: { phone, userId: { not: null } },
-      select: { id: true },
-    });
-    if (linkedTechnician) {
-      throw new UserResourceError("Ese telefono ya esta vinculado a otro tecnico");
-    }
+  if (linkedTechnician) {
+    throw new UserResourceError("Ese teléfono ya está registrado");
   }
 
   const authResult = await supabaseAdmin.auth.admin.createUser({
     ...(email
       ? { email, email_confirm: true }
-      : { phone: phone!, phone_confirm: true }),
+      : { email: getPhoneAuthEmail(phone!), email_confirm: true }),
     password,
     user_metadata: {
+      auth_method: authMethod,
       full_name: fullName,
+      ...(phone ? { login_phone: phone } : {}),
       must_change_password: true,
       role,
     },
   });
 
   if (authResult.error || !authResult.data.user) {
-    const identifier = email ? "correo" : "telefono";
+    const identifier = email ? "correo" : "teléfono";
     throw new UserResourceError(
       authResult.error?.message.toLowerCase().includes("already")
         ? `Ya existe una cuenta con ese ${identifier}`
@@ -63,14 +63,10 @@ export const createUser = async (input: unknown) => {
       });
 
       if (role === "technician") {
-        const existingTechnician = phone
-          ? await tx.technician.findFirst({ where: { phone, userId: null } })
-          : null;
-
-        if (existingTechnician) {
+        if (availableTechnician) {
           await tx.technician.update({
-            where: { id: existingTechnician.id },
-            data: { userId, name: fullName, isActive: true },
+            where: { id: availableTechnician.id },
+            data: { userId, name: fullName, phone, isActive: true },
           });
         } else {
           await tx.technician.create({
@@ -93,6 +89,7 @@ export const updateUser = async (id: string, input: unknown) => {
   const actor = await assertAdmin();
   const payload = readObject(input);
   const data: Prisma.ProfileUpdateInput = {};
+  const phone = has(payload, "phone") ? readPhone(payload) : undefined;
   if (has(payload, "fullName")) data.fullName = readRequiredString(payload, "fullName");
   if (has(payload, "role")) data.role = readRole(payload);
   if (has(payload, "isActive")) data.isActive = readBoolean(payload, "isActive");
@@ -100,39 +97,128 @@ export const updateUser = async (id: string, input: unknown) => {
     throw new UserResourceError("No puedes quitar tu propio acceso de administrador");
   }
 
-  return prisma.$transaction(async (tx) => {
-    const profile = await tx.profile.update({ where: { id }, data });
-    const technician = await tx.technician.findUnique({ where: { userId: id } });
+  if (phone) {
+    const duplicate = (await findTechniciansByPhone(phone)).find(
+      (technician) => technician.userId
+        ? technician.userId !== id
+        : technician.isActive,
+    );
 
-    if (profile.role === "technician") {
-      if (technician) {
+    if (duplicate) {
+      throw new UserResourceError("Ese teléfono ya está registrado");
+    }
+  }
+
+  const supabaseAdmin = phone ? createSupabaseAdminClient() : null;
+  let previousEmail: string | null = null;
+  let previousMetadata: Record<string, unknown> = {};
+  let authIdentifierChanged = false;
+
+  if (phone && supabaseAdmin) {
+    const authResult = await supabaseAdmin.auth.admin.getUserById(id);
+
+    if (authResult.error || !authResult.data.user) {
+      throw new UserResourceError("No se pudo consultar la cuenta del usuario");
+    }
+
+    previousEmail = authResult.data.user.email ?? null;
+    previousMetadata = authResult.data.user.user_metadata;
+    const phoneAuthEmail = getPhoneAuthEmail(phone);
+
+    if (
+      previousEmail !== phoneAuthEmail
+      || authResult.data.user.user_metadata.login_phone !== phone
+    ) {
+      const updateResult = await supabaseAdmin.auth.admin.updateUserById(id, {
+        email: phoneAuthEmail,
+        email_confirm: true,
+        user_metadata: {
+          ...authResult.data.user.user_metadata,
+          auth_method: "phone",
+          login_phone: phone,
+        },
+      });
+
+      if (updateResult.error) {
+        const message = updateResult.error.message.toLowerCase();
+        throw new UserResourceError(
+          message.includes("already") || message.includes("registered")
+            ? "Ese teléfono ya está registrado"
+            : "No se pudo actualizar el teléfono de acceso",
+        );
+      }
+
+      authIdentifierChanged = true;
+    }
+  }
+
+  try {
+    const profile = await prisma.$transaction(async (tx) => {
+      const updatedProfile = await tx.profile.update({ where: { id }, data });
+      const technician = await tx.technician.findUnique({ where: { userId: id } });
+
+      if (updatedProfile.role === "technician") {
+        if (technician) {
+          await tx.technician.update({
+            where: { id: technician.id },
+            data: {
+              name: updatedProfile.fullName,
+              isActive: updatedProfile.isActive,
+              ...(phone ? { phone } : {}),
+            },
+          });
+        } else {
+          await tx.technician.create({
+            data: {
+              userId: id,
+              name: updatedProfile.fullName,
+              phone: phone ?? null,
+              isActive: updatedProfile.isActive,
+            },
+          });
+        }
+      } else if (technician) {
         await tx.technician.update({
           where: { id: technician.id },
-          data: { name: profile.fullName, isActive: profile.isActive },
-        });
-      } else {
-        await tx.technician.create({
-          data: { userId: id, name: profile.fullName, isActive: profile.isActive },
+          data: { isActive: false, ...(phone ? { phone } : {}) },
         });
       }
-    } else if (technician) {
-      await tx.technician.update({
-        where: { id: technician.id },
-        data: { isActive: false },
+
+      return updatedProfile;
+    });
+
+    return phone ? { ...profile, phone } : profile;
+  } catch {
+    if (authIdentifierChanged && previousEmail && supabaseAdmin) {
+      await supabaseAdmin.auth.admin.updateUserById(id, {
+        email: previousEmail,
+        email_confirm: true,
+        user_metadata: previousMetadata,
       });
     }
 
-    return profile;
-  });
+    throw new UserResourceError("No se pudo actualizar el usuario");
+  }
 };
 
 export const deleteUser = async (id: string) => {
   const actor = await assertAdmin();
   if (actor.id === id) throw new UserResourceError("No puedes eliminar tu propio perfil");
 
+  const technician = await prisma.technician.findUnique({
+    where: { userId: id },
+    select: { id: true },
+  });
   const supabaseAdmin = createSupabaseAdminClient();
   const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
   if (error) throw new UserResourceError("No se pudo eliminar la cuenta");
+
+  if (technician) {
+    await prisma.technician.update({
+      where: { id: technician.id },
+      data: { isActive: false, phone: null },
+    });
+  }
 };
 
 const readObject = (input: unknown): Record<string, unknown> => {
@@ -168,17 +254,28 @@ const readEmail = (payload: Record<string, unknown>) => {
 };
 
 const readPhone = (payload: Record<string, unknown>) => {
-  const phone = readRequiredString(payload, "phone").replace(/[\s()-]/g, "");
-  if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-    throw new UserResourceError("El telefono debe incluir el codigo de pais, por ejemplo +593999999999");
+  const phone = normalizePhone(readRequiredString(payload, "phone"));
+  if (!/^\+593\d{8,9}$/.test(phone)) {
+    throw new UserResourceError("El teléfono ecuatoriano no es válido");
   }
   return phone;
+};
+
+const findTechniciansByPhone = async (phone: string) => {
+  const technicians = await prisma.technician.findMany({
+    where: { phone: { not: null } },
+    select: { id: true, isActive: true, phone: true, userId: true },
+  });
+
+  return technicians.filter(
+    (technician) => technician.phone && normalizePhone(technician.phone) === phone,
+  );
 };
 
 const readPassword = (payload: Record<string, unknown>) => {
   const password = readRequiredString(payload, "password");
   if (password.length < 8) {
-    throw new UserResourceError("La contrasena temporal debe tener al menos 8 caracteres");
+    throw new UserResourceError("La contraseña temporal debe tener al menos 8 caracteres");
   }
   return password;
 };
@@ -186,7 +283,7 @@ const readPassword = (payload: Record<string, unknown>) => {
 const readAuthMethod = (payload: Record<string, unknown>) => {
   const method = readRequiredString(payload, "authMethod");
   if (method !== "email" && method !== "phone") {
-    throw new UserResourceError("El metodo de acceso no es valido");
+    throw new UserResourceError("El método de acceso no es válido");
   }
   return method;
 };

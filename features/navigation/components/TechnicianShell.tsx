@@ -20,7 +20,7 @@ const TechnicianShell = ({ children, technicianName }: TechnicianShellProps) => 
         <div className="flex items-center gap-2">
           <span className="hidden max-w-48 truncate text-sm text-zinc-600 sm:inline">{technicianName}</span>
           <form action="/api/auth/logout" method="post">
-            <button type="submit" title="Cerrar sesion" aria-label="Cerrar sesion" className="grid size-9 place-items-center rounded-md border border-zinc-300 text-zinc-700 hover:bg-zinc-100">
+            <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión" className="grid size-9 place-items-center rounded-md border border-zinc-300 text-zinc-700 hover:bg-zinc-100">
               <LogOut aria-hidden="true" className="size-4" />
             </button>
           </form>
