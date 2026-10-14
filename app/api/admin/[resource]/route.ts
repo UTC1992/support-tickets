@@ -10,7 +10,7 @@ const POST = async (request: Request, context: RouteContext) => {
     const { resource } = await context.params;
     const payload = await request.json();
     const item = resource === "profiles"
-      ? await createUser(payload, { origin: new URL(request.url).origin })
+      ? await createUser(payload)
       : await createCatalogResource(parseCatalogResource(resource), payload);
     return jsonResponse({ item }, { status: 201 });
   } catch (error) {

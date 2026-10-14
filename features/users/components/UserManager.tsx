@@ -41,7 +41,7 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
       <div className="mb-4 flex justify-end">
         <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700"><Plus className="size-4" /> Crear usuario</button>
       </div>
-      <p className="mb-4 text-sm text-zinc-600">Invita por correo o crea un acceso para tecnico con telefono y contrasena temporal.</p>
+      <p className="mb-4 text-sm text-zinc-600">Crea accesos con correo o telefono y una contrasena temporal.</p>
       {error && !isOpen ? <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
       <div className="overflow-hidden border-y border-zinc-200 bg-white sm:rounded-md sm:border">
         {users.map((user) => (
@@ -68,12 +68,8 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
               </div>
             ) : null}
             {!editing && authMethod === "email" ? <label className="block text-sm font-medium">Correo<input name="email" type="email" required autoFocus autoComplete="email" placeholder="usuario@empresa.com" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
-            {!editing && authMethod === "phone" ? (
-              <div className="space-y-4">
-                <label className="block text-sm font-medium">Telefono<input name="phone" type="tel" required autoFocus autoComplete="tel" placeholder="+593999999999" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label>
-                <label className="block text-sm font-medium">Contrasena temporal<input name="password" type="password" minLength={8} required autoComplete="new-password" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label>
-              </div>
-            ) : null}
+            {!editing && authMethod === "phone" ? <label className="block text-sm font-medium">Telefono<input name="phone" type="tel" required autoFocus autoComplete="tel" placeholder="+593999999999" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
+            {!editing ? <label className="mt-4 block text-sm font-medium">Contrasena temporal<input name="password" type="password" minLength={8} required autoComplete="new-password" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             <label className={`${editing ? "" : "mt-4"} block text-sm font-medium`}>Nombre completo<input name="fullName" defaultValue={editing?.fullName} required autoFocus={Boolean(editing)} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label>
             {editing || authMethod === "email" ? <label className="mt-4 block text-sm font-medium">Rol<select name="role" defaultValue={editing?.role ?? "office"} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base"><option value="office">Oficina</option><option value="technician">Tecnico</option><option value="admin">Administrador</option></select></label> : <p className="mt-4 text-sm text-zinc-600">El acceso por telefono se creara con rol Tecnico.</p>}
             {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}

@@ -30,7 +30,7 @@ const SetPasswordForm = () => {
     if (updateError) {
       setError(
         updateError.message.toLowerCase().includes("session")
-          ? "La invitacion vencio o no es valida"
+          ? "La sesion vencio. Inicia sesion nuevamente con tu contrasena temporal"
           : updateError.message,
       );
       setIsSubmitting(false);
@@ -45,8 +45,8 @@ const SetPasswordForm = () => {
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4 rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-zinc-950">Crear contrasena</h1>
-        <p className="text-sm text-zinc-600">Define la contrasena para acceder a tu cuenta.</p>
+        <h1 className="text-xl font-semibold text-zinc-950">Cambiar contrasena</h1>
+        <p className="text-sm text-zinc-600">Por seguridad, reemplaza la contrasena temporal.</p>
       </div>
       <label className="flex flex-col gap-1.5 text-sm font-medium text-zinc-800">Contrasena
         <input type="password" minLength={8} autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-md border border-zinc-300 px-3 text-base font-normal outline-none focus:border-zinc-900" />

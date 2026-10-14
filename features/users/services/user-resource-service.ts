@@ -12,11 +12,7 @@ export class UserResourceError extends Error {
   }
 }
 
-type CreateUserOptions = {
-  origin?: string;
-};
-
-export const createUser = async (input: unknown, options: CreateUserOptions = {}) => {
+export const createUser = async (input: unknown) => {
   await assertAdmin();
   const payload = readObject(input);
   const fullName = readRequiredString(payload, "fullName");
@@ -24,7 +20,7 @@ export const createUser = async (input: unknown, options: CreateUserOptions = {}
   const role = authMethod === "phone" ? "technician" : readRole(payload);
   const email = authMethod === "email" ? readEmail(payload) : null;
   const phone = authMethod === "phone" ? readPhone(payload) : null;
-  const password = authMethod === "phone" ? readPassword(payload) : null;
+  const password = readPassword(payload);
   const supabaseAdmin = createSupabaseAdminClient();
 
   if (phone) {
@@ -37,21 +33,17 @@ export const createUser = async (input: unknown, options: CreateUserOptions = {}
     }
   }
 
-  const authResult = email
-    ? await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: fullName, role },
-        redirectTo: options.origin ? `${options.origin}/set-password` : undefined,
-      })
-    : await supabaseAdmin.auth.admin.createUser({
-        phone: phone!,
-        password: password!,
-        phone_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-          must_change_password: true,
-          role,
-        },
-      });
+  const authResult = await supabaseAdmin.auth.admin.createUser({
+    ...(email
+      ? { email, email_confirm: true }
+      : { phone: phone!, phone_confirm: true }),
+    password,
+    user_metadata: {
+      full_name: fullName,
+      must_change_password: true,
+      role,
+    },
+  });
 
   if (authResult.error || !authResult.data.user) {
     const identifier = email ? "correo" : "telefono";
