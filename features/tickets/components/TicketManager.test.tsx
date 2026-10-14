@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import TicketManager from "@/features/tickets/components/TicketManager";
 
 vi.mock("@/features/tickets/services/ticket-api-service", () => ({
   createTicketRequest: vi.fn(),
   deleteTicketRequest: vi.fn(),
+  getTicketExportUrl: vi.fn(() => "/api/tickets/export"),
+  listTicketsRequest: vi.fn(),
   updateTicketRequest: vi.fn(),
 }));
 
@@ -32,15 +34,22 @@ const ticket = {
 };
 
 const catalogs = { zones: [], supportTypes: [], technicians: [] };
+const initialData = {
+  tickets: [ticket],
+  pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
+};
 
 const renderTicketManager = (canDelete: boolean) => {
   const queryClient = new QueryClient({
-    defaultOptions: { mutations: { retry: false } },
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { staleTime: Infinity },
+    },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <TicketManager initialTickets={[ticket]} catalogs={catalogs} canDelete={canDelete} />
+      <TicketManager initialData={initialData} catalogs={catalogs} canDelete={canDelete} />
     </QueryClientProvider>,
   );
 };
@@ -51,5 +60,21 @@ describe("TicketManager", () => {
 
     expect(screen.getByRole("button", { name: /editar soporte/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /eliminar soporte/i })).not.toBeInTheDocument();
+  });
+
+  it("permite exportar y consultar todos los datos del soporte", () => {
+    renderTicketManager(false);
+
+    expect(screen.getByRole("link", { name: /excel/i })).toHaveAttribute(
+      "href",
+      "/api/tickets/export",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /ver soporte/i }));
+
+    expect(screen.getByText("Detalle completo del soporte")).toBeInTheDocument();
+    expect(screen.getByText("Fecha de finalizacion")).toBeInTheDocument();
+    expect(screen.getByText("Notas del tecnico")).toBeInTheDocument();
+    expect(screen.getByText("Resultado")).toBeInTheDocument();
   });
 });

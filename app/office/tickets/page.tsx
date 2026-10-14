@@ -5,11 +5,11 @@ import TicketManager from "@/features/tickets/components/TicketManager";
 import { getTicketCatalogs, listManagedTickets } from "@/features/tickets/services/ticket-service";
 
 const TicketsContent = async () => {
-  const [tickets, catalogs] = await Promise.all([
+  const [ticketPage, catalogs] = await Promise.all([
     listManagedTickets(),
     getTicketCatalogs(),
   ]);
-  const initialTickets = tickets.map((ticket) => ({
+  const initialTickets = ticketPage.tickets.map((ticket) => ({
     ...ticket,
     intakeDate: ticket.intakeDate.toISOString(),
     scheduledAt: ticket.scheduledAt?.toISOString() ?? null,
@@ -19,7 +19,7 @@ const TicketsContent = async () => {
   return (
     <>
       <PageHeader title="Soportes" description="Crea, asigna y actualiza los soportes registrados." />
-      <TicketManager initialTickets={initialTickets} catalogs={catalogs} canDelete={false} />
+      <TicketManager initialData={{ tickets: initialTickets, pagination: ticketPage.pagination }} catalogs={catalogs} canDelete={false} />
     </>
   );
 };

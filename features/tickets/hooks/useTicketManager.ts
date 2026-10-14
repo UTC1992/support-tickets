@@ -1,22 +1,36 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { createTicketRequest, deleteTicketRequest, updateTicketRequest } from "@/features/tickets/services/ticket-api-service";
-import type { TicketItem } from "@/features/tickets/types";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { createTicketRequest, deleteTicketRequest, getTicketExportUrl, listTicketsRequest, updateTicketRequest } from "@/features/tickets/services/ticket-api-service";
+import type { TicketFilterField, TicketFilterValues, TicketItem, TicketPageData } from "@/features/tickets/types";
 
-const normalizeTicket = (ticket: TicketItem) => ({
-  ...ticket,
-  intakeDate: String(ticket.intakeDate),
-  scheduledAt: ticket.scheduledAt ? String(ticket.scheduledAt) : null,
-  completedAt: ticket.completedAt ? String(ticket.completedAt) : null,
-});
+const defaultFilters: TicketFilterValues = {
+  from: "",
+  page: 1,
+  pageSize: 20,
+  search: "",
+  status: "",
+  supportTypeId: "",
+  technicianId: "",
+  to: "",
+  zoneId: "",
+};
 
-const useTicketManager = (initialTickets: TicketItem[]) => {
-  const [tickets, setTickets] = useState(initialTickets);
+const useTicketManager = (initialData: TicketPageData) => {
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TicketItem | null>(null);
+  const [viewing, setViewing] = useState<TicketItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState(defaultFilters);
+  const [draftFilters, setDraftFilters] = useState(defaultFilters);
+
+  const ticketsQuery = useQuery({
+    queryKey: ["tickets", filters],
+    queryFn: () => listTicketsRequest(filters),
+    initialData: filters === defaultFilters ? initialData : undefined,
+    placeholderData: keepPreviousData,
+  });
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) => createTicketRequest<TicketItem>(body),
@@ -29,17 +43,7 @@ const useTicketManager = (initialTickets: TicketItem[]) => {
     mutationFn: deleteTicketRequest,
   });
 
-  const visibleTickets = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return tickets;
-    return tickets.filter((ticket) => [
-      ticket.clientName,
-      ticket.clientPhone,
-      ticket.clientIp,
-      ticket.sector,
-      ticket.technician?.name,
-    ].some((value) => value?.toLowerCase().includes(term)));
-  }, [search, tickets]);
+  const refreshTickets = () => queryClient.invalidateQueries({ queryKey: ["tickets"] });
 
   const resetMutations = () => {
     createMutation.reset();
@@ -60,6 +64,32 @@ const useTicketManager = (initialTickets: TicketItem[]) => {
   };
 
   const closeForm = () => setIsOpen(false);
+  const closeDetails = () => setViewing(null);
+
+  const openDetails = (ticket: TicketItem) => setViewing(ticket);
+
+  const editFromDetails = () => {
+    if (!viewing) return;
+    openEdit(viewing);
+    closeDetails();
+  };
+
+  const setDraftFilter = (field: TicketFilterField, value: string) => {
+    setDraftFilters((current) => ({ ...current, [field]: value }));
+  };
+
+  const applyFilters = () => {
+    setFilters({ ...draftFilters, page: 1 });
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(defaultFilters);
+    setFilters(defaultFilters);
+  };
+
+  const setPage = (page: number) => {
+    setFilters((current) => ({ ...current, page }));
+  };
 
   const saveTicket = (data: FormData) => {
     const value = (key: string) => String(data.get(key) ?? "");
@@ -88,10 +118,9 @@ const useTicketManager = (initialTickets: TicketItem[]) => {
       updateMutation.mutate(
         { id: editing.id, body },
         {
-          onSuccess: (updated) => {
-            const normalized = normalizeTicket(updated);
-            setTickets((current) => current.map((ticket) => ticket.id === editing.id ? normalized : ticket));
+          onSuccess: () => {
             closeForm();
+            void refreshTickets();
           },
         },
       );
@@ -99,9 +128,9 @@ const useTicketManager = (initialTickets: TicketItem[]) => {
     }
 
     createMutation.mutate(body, {
-      onSuccess: (created) => {
-        setTickets((current) => [normalizeTicket(created), ...current]);
+      onSuccess: () => {
         closeForm();
+        void refreshTickets();
       },
     });
   };
@@ -112,24 +141,34 @@ const useTicketManager = (initialTickets: TicketItem[]) => {
     resetMutations();
     deleteMutation.mutate(ticket.id, {
       onSuccess: () => {
-        setTickets((current) => current.filter((item) => item.id !== ticket.id));
+        void refreshTickets();
       },
     });
   };
 
   return {
     closeForm,
+    closeDetails,
+    clearFilters,
     deleteTicket,
+    draftFilters,
+    editFromDetails,
     editing,
     error: createMutation.error ?? updateMutation.error ?? deleteMutation.error,
+    exportUrl: getTicketExportUrl(filters),
+    isLoading: ticketsQuery.isFetching,
     isOpen,
     isSaving: createMutation.isPending || updateMutation.isPending,
+    openDetails,
     openCreate,
     openEdit,
+    pagination: ticketsQuery.data?.pagination ?? initialData.pagination,
+    applyFilters,
     saveTicket,
-    search,
-    setSearch,
-    visibleTickets,
+    setDraftFilter,
+    setPage,
+    tickets: ticketsQuery.data?.tickets ?? initialData.tickets,
+    viewing,
   };
 };
 

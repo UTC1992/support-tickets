@@ -34,7 +34,7 @@ type TicketCreateInput = {
   resultNotes?: string | null;
 };
 
-type TicketFilters = {
+export type TicketFilters = {
   status?: string | null;
   technicianId?: string | null;
   zoneId?: string | null;
@@ -43,6 +43,7 @@ type TicketFilters = {
   from?: string | null;
   to?: string | null;
   limit?: string | null;
+  page?: string | null;
 };
 
 const ticketInclude = {
@@ -53,36 +54,35 @@ const ticketInclude = {
 
 export const listTickets = async (filters: TicketFilters) => {
   const take = clampLimit(filters.limit);
-  const where: Prisma.TicketWhereInput = {};
+  const page = clampPage(filters.page);
+  const where = buildTicketWhere(filters);
+  const [tickets, total] = await prisma.$transaction([
+    prisma.ticket.findMany({
+      where,
+      include: ticketInclude,
+      orderBy: [{ intakeDate: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * take,
+      take,
+    }),
+    prisma.ticket.count({ where }),
+  ]);
 
-  if (filters.status) where.status = parseStatus(filters.status);
-  if (filters.technicianId) where.technicianId = filters.technicianId;
-  if (filters.zoneId) where.zoneId = filters.zoneId;
-  if (filters.supportTypeId) where.supportTypeId = filters.supportTypeId;
+  return {
+    tickets,
+    pagination: {
+      page,
+      pageSize: take,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+    },
+  };
+};
 
-  if (filters.from || filters.to) {
-    where.intakeDate = {
-      ...(filters.from ? { gte: parseDate(filters.from) } : {}),
-      ...(filters.to ? { lte: parseDate(filters.to) } : {}),
-    };
-  }
-
-  if (filters.search) {
-    const search = filters.search.trim();
-    where.OR = [
-      { clientName: { contains: search, mode: "insensitive" } },
-      { clientPhone: { contains: search, mode: "insensitive" } },
-      { clientIp: { contains: search, mode: "insensitive" } },
-      { sector: { contains: search, mode: "insensitive" } },
-      { observation: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
+export const listTicketsForExport = async (filters: TicketFilters) => {
   return prisma.ticket.findMany({
-    where,
+    where: buildTicketWhere(filters),
     include: ticketInclude,
     orderBy: [{ intakeDate: "desc" }, { createdAt: "desc" }],
-    take,
   });
 };
 
@@ -258,7 +258,7 @@ const parsePriority = (value: string) => {
 
 const parseDate = (value?: string | null) => {
   if (!value) return new Date();
-  const date = new Date(`${value}T00:00:00`);
+  const date = new Date(`${value}T00:00:00.000Z`);
 
   if (Number.isNaN(date.getTime())) {
     throw new Error("Invalid date");
@@ -312,11 +312,46 @@ const assignNullableString = (
   }
 };
 
+const buildTicketWhere = (filters: TicketFilters) => {
+  const where: Prisma.TicketWhereInput = {};
+
+  if (filters.status) where.status = parseStatus(filters.status);
+  if (filters.technicianId) where.technicianId = filters.technicianId;
+  if (filters.zoneId) where.zoneId = filters.zoneId;
+  if (filters.supportTypeId) where.supportTypeId = filters.supportTypeId;
+
+  if (filters.from || filters.to) {
+    where.intakeDate = {
+      ...(filters.from ? { gte: parseDate(filters.from) } : {}),
+      ...(filters.to ? { lte: parseDate(filters.to) } : {}),
+    };
+  }
+
+  if (filters.search) {
+    const search = filters.search.trim();
+    where.OR = [
+      { clientName: { contains: search, mode: "insensitive" } },
+      { clientPhone: { contains: search, mode: "insensitive" } },
+      { clientIp: { contains: search, mode: "insensitive" } },
+      { sector: { contains: search, mode: "insensitive" } },
+      { observation: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
+};
+
 const clampLimit = (value?: string | null) => {
-  if (!value) return 50;
+  if (!value) return 20;
   const limit = Number.parseInt(value, 10);
 
-  if (Number.isNaN(limit)) return 50;
+  if (Number.isNaN(limit)) return 20;
 
   return Math.min(Math.max(limit, 1), 100);
+};
+
+const clampPage = (value?: string | null) => {
+  if (!value) return 1;
+  const page = Number.parseInt(value, 10);
+  return Number.isNaN(page) ? 1 : Math.max(page, 1);
 };

@@ -27,3 +27,29 @@ export type TicketCatalogs = {
   supportTypes: CatalogOption[];
   technicians: CatalogOption[];
 };
+
+export type TicketPagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+export type TicketPageData = {
+  tickets: TicketItem[];
+  pagination: TicketPagination;
+};
+
+export type TicketFilterValues = {
+  from: string;
+  page: number;
+  pageSize: number;
+  search: string;
+  status: string;
+  supportTypeId: string;
+  technicianId: string;
+  to: string;
+  zoneId: string;
+};
+
+export type TicketFilterField = Exclude<keyof TicketFilterValues, "page" | "pageSize">;

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as GET_CATALOGS } from "@/app/api/catalogs/route";
+import { GET as GET_TICKET_EXPORT } from "@/app/api/tickets/export/route";
 import { GET as GET_TICKETS, POST as POST_TICKET } from "@/app/api/tickets/route";
 import { GET as GET_TICKET, PATCH as PATCH_TICKET } from "@/app/api/tickets/[id]/route";
 import { assertBackOffice } from "@/lib/auth/back-office";
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getTicket: vi.fn(),
   listCatalogs: vi.fn(),
   listTickets: vi.fn(),
+  listTicketsForExport: vi.fn(),
   updateTicket: vi.fn(),
 }));
 
@@ -35,7 +37,11 @@ vi.mock("@/lib/services/tickets", () => ({
   deleteTicket: vi.fn(),
   getTicket: mocks.getTicket,
   listTickets: mocks.listTickets,
+  listTicketsForExport: mocks.listTicketsForExport,
   updateTicket: mocks.updateTicket,
+}));
+vi.mock("@/features/tickets/services/ticket-export-service", () => ({
+  default: vi.fn().mockResolvedValue(Buffer.from("workbook")),
 }));
 
 describe("rutas operativas de soportes", () => {
@@ -43,6 +49,7 @@ describe("rutas operativas de soportes", () => {
     vi.clearAllMocks();
     mocks.listCatalogs.mockResolvedValue({ zones: [], supportTypes: [], technicians: [] });
     mocks.listTickets.mockResolvedValue([]);
+    mocks.listTicketsForExport.mockResolvedValue([]);
     mocks.createTicket.mockResolvedValue({ id: "ticket-1" });
     mocks.getTicket.mockResolvedValue({ id: "ticket-1" });
     mocks.updateTicket.mockResolvedValue({ id: "ticket-1" });
@@ -61,6 +68,15 @@ describe("rutas operativas de soportes", () => {
     }));
 
     expect(assertBackOffice).toHaveBeenCalledTimes(2);
+  });
+
+  it("protege la exportacion de tickets", async () => {
+    const response = await GET_TICKET_EXPORT(new Request("http://localhost/api/tickets/export?status=completed"));
+
+    expect(assertBackOffice).toHaveBeenCalledOnce();
+    expect(response.headers.get("content-type")).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
   });
 
   it("protege la consulta y edicion individual de tickets", async () => {

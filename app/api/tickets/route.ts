@@ -1,4 +1,5 @@
 import { assertBackOffice, BackOfficeAccessError } from "@/lib/auth/back-office";
+import parseTicketFilters from "@/features/tickets/services/ticket-filter-service";
 import { getErrorMessage, jsonResponse } from "@/lib/http/json";
 import { createTicket, listTickets } from "@/lib/services/tickets";
 
@@ -6,18 +7,9 @@ const GET = async (request: Request) => {
   try {
     await assertBackOffice();
     const { searchParams } = new URL(request.url);
-    const tickets = await listTickets({
-      status: searchParams.get("status"),
-      technicianId: searchParams.get("technicianId"),
-      zoneId: searchParams.get("zoneId"),
-      supportTypeId: searchParams.get("supportTypeId"),
-      search: searchParams.get("search"),
-      from: searchParams.get("from"),
-      to: searchParams.get("to"),
-      limit: searchParams.get("limit"),
-    });
+    const result = await listTickets(parseTicketFilters(searchParams));
 
-    return jsonResponse({ tickets });
+    return jsonResponse(result);
   } catch (error) {
     const status = error instanceof BackOfficeAccessError ? error.status : 400;
     return jsonResponse({ error: getErrorMessage(error) }, { status });
