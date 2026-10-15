@@ -19,7 +19,7 @@ type TicketExportItem = {
   resultNotes: string | null;
   zone: ExportRelation;
   technician: ExportRelation;
-  supportType: ({ name: string; exportGroup: string } | null);
+  supportType: ExportRelation;
 };
 
 const statusLabels: Record<string, string> = {
@@ -152,7 +152,7 @@ const buildTicketWorkbook = async (tickets: TicketExportItem[]) => {
 
   const groups = new Map<string, TicketExportItem[]>();
   tickets.forEach((ticket) => {
-    const group = ticket.supportType?.exportGroup || "SIN CLASIFICAR";
+    const group = ticket.supportType?.name.trim().toUpperCase() || "SIN CLASIFICAR";
     groups.set(group, [...(groups.get(group) ?? []), ticket]);
   });
 

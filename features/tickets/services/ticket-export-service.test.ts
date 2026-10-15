@@ -18,7 +18,7 @@ const baseTicket = {
   resultNotes: "Servicio restablecido",
   zone: { name: "Saquisili" },
   technician: { name: "Tecnico Uno" },
-  supportType: { name: "Soporte tecnico", exportGroup: "SOPORTE TECNICO" },
+  supportType: { name: "Soporte tecnico" },
 };
 
 describe("buildTicketWorkbook", () => {
@@ -29,7 +29,7 @@ describe("buildTicketWorkbook", () => {
         ...baseTicket,
         id: "ticket-2",
         clientName: "Cliente Dos",
-        supportType: { name: "Retiro", exportGroup: "RETIRO DE EQUIPOS" },
+        supportType: { name: "Retiro" },
       },
     ]);
     const workbook = new ExcelJS.Workbook();
@@ -41,7 +41,7 @@ describe("buildTicketWorkbook", () => {
 
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
       "SOPORTE TECNICO",
-      "RETIRO DE EQUIPOS",
+      "RETIRO",
     ]);
     const supportSheet = workbook.getWorksheet("SOPORTE TECNICO");
     expect(supportSheet?.getCell("A1").value).toBe("SOPORTES EXITCOMP");

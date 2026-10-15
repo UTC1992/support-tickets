@@ -57,7 +57,6 @@ const CatalogManager = ({ initialItems, resource, itemLabel, secondaryField }: C
                   <p className="truncate text-sm font-medium text-zinc-950">{item.name}</p>
                   <p className="mt-0.5 text-xs text-zinc-500">
                     {secondaryField === "phone" ? formatPhoneForDisplay(item.phone) || "Sin teléfono" : null}
-                    {secondaryField === "exportGroup" ? `Grupo: ${item.exportGroup}` : null}
                     {secondaryField ? " · " : ""}{item.ticketCount} soportes · {item.isActive ? "Activo" : "Inactivo"}
                   </p>
                 </div>
@@ -81,7 +80,6 @@ const CatalogManager = ({ initialItems, resource, itemLabel, secondaryField }: C
               <input name="name" defaultValue={editing?.name} required autoFocus className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" />
             </label>
             {secondaryField === "phone" ? <label className="mt-4 block text-sm font-medium text-zinc-800">Teléfono<input name="phone" type="tel" defaultValue={formatPhoneForDisplay(editing?.phone)} placeholder="0999999999" onBlur={(event) => { event.currentTarget.value = formatPhoneForDisplay(event.currentTarget.value); }} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
-            {secondaryField === "exportGroup" ? <label className="mt-4 block text-sm font-medium text-zinc-800">Grupo para Excel<input name="exportGroup" defaultValue={editing?.exportGroup ?? ""} required className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={closeForm} className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium hover:bg-zinc-50">Cancelar</button>

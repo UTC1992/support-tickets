@@ -26,6 +26,6 @@ export const listSupportTypes = async () => {
   return prisma.supportType.findMany({
     where: { tenantId: profile.tenantId },
     orderBy: { name: "asc" },
-    select: { id: true, name: true, exportGroup: true, isActive: true, _count: { select: { tickets: true } } },
+    select: { id: true, name: true, isActive: true, _count: { select: { tickets: true } } },
   });
 };

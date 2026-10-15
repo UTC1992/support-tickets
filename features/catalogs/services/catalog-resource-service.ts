@@ -36,7 +36,7 @@ export const createCatalogResource = async (resource: CatalogResource, input: un
     case "technicians":
       return prisma.technician.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name"), phone }, include: { _count: { select: { tickets: true } } } });
     case "support-types":
-      return prisma.supportType.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name"), exportGroup: readRequiredString(payload, "exportGroup") }, include: { _count: { select: { tickets: true } } } });
+      return prisma.supportType.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name") }, include: { _count: { select: { tickets: true } } } });
   }
 };
 
@@ -56,7 +56,7 @@ export const updateCatalogResource = async (resource: CatalogResource, id: strin
     case "technicians":
       return prisma.technician.update({ where: { id, tenantId: actor.tenantId }, data: { ...catalogUpdate(payload), ...(has(payload, "phone") ? { phone: phone ?? null } : {}) }, include: { _count: { select: { tickets: true } } } });
     case "support-types":
-      return prisma.supportType.update({ where: { id, tenantId: actor.tenantId }, data: { ...catalogUpdate(payload), ...(has(payload, "exportGroup") ? { exportGroup: readRequiredString(payload, "exportGroup") } : {}) }, include: { _count: { select: { tickets: true } } } });
+      return prisma.supportType.update({ where: { id, tenantId: actor.tenantId }, data: catalogUpdate(payload), include: { _count: { select: { tickets: true } } } });
   }
 };
 
