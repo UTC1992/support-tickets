@@ -77,6 +77,9 @@ describe("rutas operativas de soportes", () => {
     expect(response.headers.get("content-type")).toBe(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
+    expect(response.headers.get("content-disposition")).toMatch(
+      /^attachment; filename="soportes-exitcomp-\d{4}-\d{2}-\d{2}\.xlsx"$/,
+    );
   });
 
   it("protege la consulta y edicion individual de tickets", async () => {

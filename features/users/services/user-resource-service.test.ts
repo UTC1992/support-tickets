@@ -4,6 +4,7 @@ import prisma from "@/lib/db/prisma";
 import {
   createUser,
   deleteUser,
+  resetUserPassword,
   updateUser,
 } from "@/features/users/services/user-resource-service";
 
@@ -211,5 +212,41 @@ describe("user resource service", () => {
       where: { id: "technician-1" },
       data: { isActive: false, phone: null },
     });
+  });
+
+  it("restablece la contrasena y obliga a cambiarla en el siguiente ingreso", async () => {
+    mocks.getAuthUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          user_metadata: {
+            auth_method: "phone",
+            full_name: "Técnico Uno",
+            must_change_password: false,
+          },
+        },
+      },
+      error: null,
+    });
+
+    await resetUserPassword("user-1", { password: "Temporal456" });
+
+    expect(mocks.assertAdmin).toHaveBeenCalledOnce();
+    expect(mocks.updateAuthUser).toHaveBeenCalledWith("user-1", {
+      password: "Temporal456",
+      user_metadata: {
+        auth_method: "phone",
+        full_name: "Técnico Uno",
+        must_change_password: true,
+      },
+    });
+  });
+
+  it("rechaza una contrasena temporal menor a ocho caracteres", async () => {
+    await expect(resetUserPassword("user-1", {
+      password: "Corta1",
+    })).rejects.toThrow("La contraseña temporal debe tener al menos 8 caracteres");
+
+    expect(mocks.updateAuthUser).not.toHaveBeenCalled();
   });
 });

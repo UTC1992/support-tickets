@@ -20,3 +20,7 @@ const request = async <T>(path: string, options: RequestOptions) => {
 export const createAdminResourceRequest = <T>(resource: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}`, { method: "POST", body });
 export const updateAdminResourceRequest = <T>(resource: string, id: string, body: Record<string, unknown>) => request<T>(`/api/admin/${resource}/${id}`, { method: "PATCH", body });
 export const deleteAdminResourceRequest = (resource: string, id: string) => request<void>(`/api/admin/${resource}/${id}`, { method: "DELETE" });
+export const resetUserPasswordRequest = (id: string, password: string) => request<void>(`/api/admin/profiles/${id}/password`, {
+  method: "PATCH",
+  body: { password },
+});

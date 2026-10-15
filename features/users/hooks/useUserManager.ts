@@ -3,13 +3,20 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { UserAuthMethod, UserItem } from "@/features/users/types";
-import { createAdminResourceRequest, deleteAdminResourceRequest, updateAdminResourceRequest } from "@/lib/services/admin-resource-api-service";
+import {
+  createAdminResourceRequest,
+  deleteAdminResourceRequest,
+  resetUserPasswordRequest,
+  updateAdminResourceRequest,
+} from "@/lib/services/admin-resource-api-service";
 
 const useUserManager = (initialUsers: UserItem[]) => {
   const [users, setUsers] = useState(initialUsers);
   const [editing, setEditing] = useState<UserItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [authMethod, setAuthMethod] = useState<UserAuthMethod>("email");
+  const [passwordUser, setPasswordUser] = useState<UserItem | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) => createAdminResourceRequest<UserItem>("profiles", body),
@@ -21,27 +28,59 @@ const useUserManager = (initialUsers: UserItem[]) => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAdminResourceRequest("profiles", id),
   });
+  const passwordMutation = useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      resetUserPasswordRequest(id, password),
+  });
 
   const resetMutations = () => {
     createMutation.reset();
     updateMutation.reset();
     deleteMutation.reset();
+    passwordMutation.reset();
   };
 
   const openCreate = () => {
     setEditing(null);
     setAuthMethod("email");
+    setSuccessMessage(null);
     resetMutations();
     setIsOpen(true);
   };
 
   const openEdit = (user: UserItem) => {
     setEditing(user);
+    setSuccessMessage(null);
     resetMutations();
     setIsOpen(true);
   };
 
   const closeForm = () => setIsOpen(false);
+
+  const openPasswordReset = (user: UserItem) => {
+    setPasswordUser(user);
+    setSuccessMessage(null);
+    resetMutations();
+  };
+
+  const closePasswordReset = () => setPasswordUser(null);
+
+  const resetPassword = (data: FormData) => {
+    if (!passwordUser) return;
+
+    passwordMutation.mutate(
+      {
+        id: passwordUser.id,
+        password: String(data.get("password") ?? ""),
+      },
+      {
+        onSuccess: () => {
+          closePasswordReset();
+          setSuccessMessage("Contraseña restablecida correctamente.");
+        },
+      },
+    );
+  };
 
   const saveUser = (data: FormData) => {
     const body = {
@@ -113,15 +152,20 @@ const useUserManager = (initialUsers: UserItem[]) => {
   return {
     authMethod,
     closeForm,
+    closePasswordReset,
     deleteUser,
     editing,
-    error: createMutation.error ?? updateMutation.error ?? deleteMutation.error,
+    error: createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? passwordMutation.error,
     isOpen,
-    isSaving: createMutation.isPending || updateMutation.isPending,
+    isSaving: createMutation.isPending || updateMutation.isPending || passwordMutation.isPending,
     openCreate,
     openEdit,
+    openPasswordReset,
+    passwordUser,
+    resetPassword,
     saveUser,
     setAuthMethod,
+    successMessage,
     toggleActive,
     users,
   };

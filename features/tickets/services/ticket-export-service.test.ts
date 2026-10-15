@@ -43,23 +43,31 @@ describe("buildTicketWorkbook", () => {
       "SOPORTE TECNICO",
       "RETIRO DE EQUIPOS",
     ]);
-    expect(workbook.getWorksheet("SOPORTE TECNICO")?.getRow(4).values).toEqual([
+    const supportSheet = workbook.getWorksheet("SOPORTE TECNICO");
+    expect(supportSheet?.getCell("A1").value).toBe("SOPORTES EXITCOMP");
+    expect(supportSheet?.getCell("A2").value).toMatch(/^FECHA DE EXPORTACION: /);
+    expect(supportSheet?.getCell("A3").value).toBe("SOPORTE TECNICO");
+    expect(supportSheet?.getRow(4).values).toEqual([
       undefined,
       "F. DE INGRESO",
-      "IP CLIENTE",
       "NOMBRES Y APELLIDOS",
       "CELULAR",
-      "SECTOR / ZONA",
+      "SECTOR",
       "TIPO DE SOPORTE",
+      "OBSERVACION",
+      "TECNICO",
       "ESTADO",
       "PRIORIDAD",
-      "TECNICO",
+      "IP CLIENTE",
       "F. PROGRAMADA",
       "F. FINALIZACION",
-      "OBSERVACION",
       "NOTAS TECNICAS",
       "RESULTADO",
     ]);
-    expect(workbook.getWorksheet("SOPORTE TECNICO")?.getCell("C5").value).toBe("Cliente Uno");
+    expect(supportSheet?.getCell("B5").value).toBe("Cliente Uno");
+    expect(supportSheet?.getCell("A5").numFmt).toBe("dd/mm/yyyy");
+    expect(supportSheet?.getCell("C5").numFmt).toBe("@");
+    expect(supportSheet?.getCell("K5").numFmt).toBe("dd/mm/yyyy hh:mm");
+    expect(supportSheet?.getCell("L5").numFmt).toBe("dd/mm/yyyy hh:mm");
   });
 });

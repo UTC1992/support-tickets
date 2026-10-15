@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import UserManager from "@/features/users/components/UserManager";
+import { resetUserPasswordRequest } from "@/lib/services/admin-resource-api-service";
 
 vi.mock("@/lib/services/admin-resource-api-service", () => ({
   createAdminResourceRequest: vi.fn(),
   deleteAdminResourceRequest: vi.fn(),
+  resetUserPasswordRequest: vi.fn(),
   updateAdminResourceRequest: vi.fn(),
 }));
 
@@ -65,5 +67,26 @@ describe("UserManager", () => {
     fireEvent.blur(phone);
 
     expect(phone).toHaveValue("0987654321");
+  });
+
+  it("permite asignar una nueva contrasena temporal", async () => {
+    vi.mocked(resetUserPasswordRequest).mockResolvedValue(undefined);
+    renderPhoneUserManager();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "Restablecer contraseña de Tecnico Uno",
+    }));
+    fireEvent.change(screen.getByLabelText("Nueva contraseña temporal"), {
+      target: { value: "Temporal456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Restablecer contraseña" }));
+
+    await waitFor(() => {
+      expect(resetUserPasswordRequest).toHaveBeenCalledWith(
+        "technician-1",
+        "Temporal456",
+      );
+    });
+    expect(await screen.findByText("Contraseña restablecida correctamente.")).toBeInTheDocument();
   });
 });

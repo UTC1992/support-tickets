@@ -201,6 +201,30 @@ export const updateUser = async (id: string, input: unknown) => {
   }
 };
 
+export const resetUserPassword = async (id: string, input: unknown) => {
+  await assertAdmin();
+  const payload = readObject(input);
+  const password = readPassword(payload);
+  const supabaseAdmin = createSupabaseAdminClient();
+  const authResult = await supabaseAdmin.auth.admin.getUserById(id);
+
+  if (authResult.error || !authResult.data.user) {
+    throw new UserResourceError("No se pudo consultar la cuenta del usuario");
+  }
+
+  const updateResult = await supabaseAdmin.auth.admin.updateUserById(id, {
+    password,
+    user_metadata: {
+      ...authResult.data.user.user_metadata,
+      must_change_password: true,
+    },
+  });
+
+  if (updateResult.error) {
+    throw new UserResourceError("No se pudo restablecer la contraseña");
+  }
+};
+
 export const deleteUser = async (id: string) => {
   const actor = await assertAdmin();
   if (actor.id === id) throw new UserResourceError("No puedes eliminar tu propio perfil");

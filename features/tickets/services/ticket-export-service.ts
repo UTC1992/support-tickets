@@ -41,17 +41,17 @@ const priorityLabels: Record<string, string> = {
 
 const headers = [
   "F. DE INGRESO",
-  "IP CLIENTE",
   "NOMBRES Y APELLIDOS",
   "CELULAR",
-  "SECTOR / ZONA",
+  "SECTOR",
   "TIPO DE SOPORTE",
+  "OBSERVACION",
+  "TECNICO",
   "ESTADO",
   "PRIORIDAD",
-  "TECNICO",
+  "IP CLIENTE",
   "F. PROGRAMADA",
   "F. FINALIZACION",
-  "OBSERVACION",
   "NOTAS TECNICAS",
   "RESULTADO",
 ];
@@ -103,17 +103,17 @@ const addTicketSheet = (
   tickets.forEach((ticket) => {
     const row = worksheet.addRow([
       ticket.intakeDate,
-      ticket.clientIp ?? "",
       ticket.clientName,
       ticket.clientPhone ?? "",
       ticket.zone?.name ?? ticket.sector ?? "",
       ticket.supportType?.name ?? "",
+      ticket.observation ?? "",
+      ticket.technician?.name ?? "SIN ASIGNAR",
       statusLabels[ticket.status] ?? ticket.status.toUpperCase(),
       priorityLabels[ticket.priority] ?? ticket.priority.toUpperCase(),
-      ticket.technician?.name ?? "SIN ASIGNAR",
+      ticket.clientIp ?? "",
       ticket.scheduledAt,
       ticket.completedAt,
-      ticket.observation ?? "",
       ticket.technicianNotes ?? "",
       ticket.resultNotes ?? "",
     ]);
@@ -130,12 +130,15 @@ const addTicketSheet = (
         top: { style: "hair", color: { argb: "FFB7C9E2" } },
       };
     });
-    [1, 10, 11].forEach((column) => {
+    row.getCell(1).numFmt = "dd/mm/yyyy";
+    row.getCell(3).numFmt = "@";
+    row.getCell(10).numFmt = "@";
+    [11, 12].forEach((column) => {
       row.getCell(column).numFmt = "dd/mm/yyyy hh:mm";
     });
   });
 
-  const widths = [14, 16, 30, 15, 24, 22, 16, 12, 20, 18, 18, 36, 30, 30];
+  const widths = [14, 30, 15, 24, 22, 36, 20, 16, 12, 16, 18, 18, 30, 30];
   widths.forEach((width, index) => {
     worksheet.getColumn(index + 1).width = width;
   });
