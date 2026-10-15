@@ -2,7 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import UserManager from "@/features/users/components/UserManager";
-import { resetUserPasswordRequest } from "@/lib/services/admin-resource-api-service";
+import {
+  createAdminResourceRequest,
+  resetUserPasswordRequest,
+} from "@/lib/services/admin-resource-api-service";
 
 vi.mock("@/lib/services/admin-resource-api-service", () => ({
   createAdminResourceRequest: vi.fn(),
@@ -45,6 +48,29 @@ const renderPhoneUserManager = () => {
   );
 };
 
+const availableTechnician = {
+  id: "catalog-technician-1",
+  name: "Técnico Disponible",
+  phone: "+593987654321",
+};
+
+const renderTechnicianAccessManager = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <UserManager
+        initialUsers={[]}
+        currentUserId="admin-1"
+        managedRole="technician"
+        availableTechnicians={[availableTechnician]}
+      />
+    </QueryClientProvider>,
+  );
+};
+
 describe("UserManager", () => {
   it("solicita una contrasena temporal al crear un usuario con correo", () => {
     renderUserManager();
@@ -67,6 +93,40 @@ describe("UserManager", () => {
     fireEvent.blur(phone);
 
     expect(phone).toHaveValue("0987654321");
+  });
+
+  it("crea el acceso seleccionando un tecnico existente", async () => {
+    vi.mocked(createAdminResourceRequest).mockResolvedValue({
+      ...phoneUser,
+      id: "user-2",
+      fullName: availableTechnician.name,
+      phone: availableTechnician.phone,
+    });
+    renderTechnicianAccessManager();
+
+    fireEvent.click(screen.getByRole("button", { name: "Crear acceso" }));
+
+    expect(screen.getByRole("option", {
+      name: "Técnico Disponible - 0987654321",
+    })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nombre completo")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Teléfono")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Técnico"), {
+      target: { value: availableTechnician.id },
+    });
+    fireEvent.change(screen.getByLabelText("Contraseña temporal"), {
+      target: { value: "Temporal123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => {
+      expect(createAdminResourceRequest).toHaveBeenCalledWith("profiles", expect.objectContaining({
+        technicianId: availableTechnician.id,
+        password: "Temporal123",
+        role: "technician",
+      }));
+    });
   });
 
   it("permite asignar una nueva contrasena temporal", async () => {

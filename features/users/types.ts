@@ -11,3 +11,9 @@ export type UserItem = {
 export type UserAuthMethod = "email" | "phone";
 
 export type ManagedUserRole = UserItem["role"];
+
+export type TechnicianAccessOption = {
+  id: string;
+  name: string;
+  phone: string;
+};

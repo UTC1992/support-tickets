@@ -41,4 +41,25 @@ const listUsers = async () => {
   }));
 };
 
+export const listAvailableTechnicians = async () => {
+  const actor = await requireUserManager();
+
+  if (actor.managedRole !== "technician") return [];
+
+  const technicians = await prisma.technician.findMany({
+    where: {
+      tenantId: actor.tenantId,
+      isActive: true,
+      phone: { not: null },
+      userId: null,
+    },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, phone: true },
+  });
+
+  return technicians.flatMap((technician) => technician.phone
+    ? [{ ...technician, phone: technician.phone }]
+    : []);
+};
+
 export default listUsers;

@@ -4,19 +4,30 @@ import { KeyRound, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { FormEvent } from "react";
 import PasswordInput from "@/features/auth/components/PasswordInput";
 import useUserManager from "@/features/users/hooks/useUserManager";
-import type { ManagedUserRole, UserItem } from "@/features/users/types";
+import type {
+  ManagedUserRole,
+  TechnicianAccessOption,
+  UserItem,
+} from "@/features/users/types";
 import { formatPhoneForDisplay } from "@/lib/services/phone";
 
 type UserManagerProps = {
   initialUsers: UserItem[];
   currentUserId: string;
   managedRole: ManagedUserRole;
+  availableTechnicians?: TechnicianAccessOption[];
 };
 
 const roleLabels = { admin: "Administrador", technician: "Técnico" };
 
-const UserManager = ({ initialUsers, currentUserId, managedRole }: UserManagerProps) => {
+const UserManager = ({
+  initialUsers,
+  currentUserId,
+  managedRole,
+  availableTechnicians: initialAvailableTechnicians = [],
+}: UserManagerProps) => {
   const {
+    availableTechnicians,
     authMethod,
     closeForm,
     closePasswordReset,
@@ -34,7 +45,9 @@ const UserManager = ({ initialUsers, currentUserId, managedRole }: UserManagerPr
     successMessage,
     toggleActive,
     users,
-  } = useUserManager(initialUsers, managedRole);
+  } = useUserManager(initialUsers, managedRole, initialAvailableTechnicians);
+
+  const canCreateUser = managedRole === "admin" || availableTechnicians.length > 0;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,9 +67,10 @@ const UserManager = ({ initialUsers, currentUserId, managedRole }: UserManagerPr
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700"><Plus className="size-4" /> Crear {managedRole === "admin" ? "administrador" : "técnico"}</button>
+        <button type="button" onClick={openCreate} disabled={!canCreateUser} className="inline-flex h-11 items-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-400"><Plus className="size-4" /> {managedRole === "admin" ? "Crear administrador" : "Crear acceso"}</button>
       </div>
-      <p className="mb-4 text-sm text-zinc-600">Crea accesos con {managedRole === "admin" ? "correo" : "teléfono"} y una contraseña temporal.</p>
+      <p className="mb-4 text-sm text-zinc-600">{managedRole === "admin" ? "Crea accesos con correo y una contraseña temporal." : "Selecciona un técnico registrado y asigna una contraseña temporal."}</p>
+      {managedRole === "technician" && !canCreateUser ? <p className="mb-4 text-sm text-zinc-600">No hay técnicos activos con teléfono pendientes de acceso.</p> : null}
       {successMessage ? <p className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{successMessage}</p> : null}
       {error && !isOpen ? <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
       <div className="overflow-hidden border-y border-zinc-200 bg-white sm:rounded-md sm:border">
@@ -77,12 +91,21 @@ const UserManager = ({ initialUsers, currentUserId, managedRole }: UserManagerPr
       {isOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 sm:place-items-center sm:p-4" role="dialog" aria-modal="true">
           <form onSubmit={handleSubmit} className="w-full bg-white p-5 shadow-xl sm:max-w-md sm:rounded-md">
-            <div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-semibold">{editing ? "Editar usuario" : "Crear usuario"}</h3><button type="button" onClick={closeForm} aria-label="Cerrar" className="grid size-9 place-items-center rounded-md hover:bg-zinc-100"><X className="size-5" /></button></div>
+            <div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-semibold">{editing ? "Editar usuario" : managedRole === "admin" ? "Crear administrador" : "Crear acceso técnico"}</h3><button type="button" onClick={closeForm} aria-label="Cerrar" className="grid size-9 place-items-center rounded-md hover:bg-zinc-100"><X className="size-5" /></button></div>
             <input type="hidden" name="role" value={managedRole} />
             {!editing && authMethod === "email" ? <label className="block text-sm font-medium">Correo<input name="email" type="email" required autoFocus autoComplete="email" placeholder="usuario@empresa.com" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
-            {!editing && authMethod === "phone" ? <label className="block text-sm font-medium">Teléfono<input name="phone" type="tel" required autoFocus autoComplete="tel" placeholder="0999999999" onBlur={(event) => { event.currentTarget.value = formatPhoneForDisplay(event.currentTarget.value); }} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
+            {!editing && authMethod === "phone" ? (
+              <label className="block text-sm font-medium">Técnico
+                <select name="technicianId" required autoFocus defaultValue="" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base outline-none focus:border-zinc-900">
+                  <option value="" disabled>Selecciona un técnico</option>
+                  {availableTechnicians.map((technician) => (
+                    <option key={technician.id} value={technician.id}>{technician.name} - {formatPhoneForDisplay(technician.phone)}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             {!editing ? <div className="mt-4"><PasswordInput name="password" label="Contraseña temporal" minLength={8} required autoComplete="new-password" /></div> : null}
-            <label className={`${editing ? "" : "mt-4"} block text-sm font-medium`}>Nombre completo<input name="fullName" defaultValue={editing?.fullName} required autoFocus={Boolean(editing)} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label>
+            {editing || managedRole === "admin" ? <label className={`${editing ? "" : "mt-4"} block text-sm font-medium`}>Nombre completo<input name="fullName" defaultValue={editing?.fullName} required autoFocus={Boolean(editing)} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             {editing?.phone ? <label className="mt-4 block text-sm font-medium">Teléfono<input name="phone" type="tel" required autoComplete="tel" defaultValue={formatPhoneForDisplay(editing.phone)} placeholder="0999999999" onBlur={(event) => { event.currentTarget.value = formatPhoneForDisplay(event.currentTarget.value); }} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             <p className="mt-4 text-sm text-zinc-600">Rol: {roleLabels[managedRole]}.</p>
             {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}

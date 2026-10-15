@@ -2,7 +2,12 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { ManagedUserRole, UserAuthMethod, UserItem } from "@/features/users/types";
+import type {
+  ManagedUserRole,
+  TechnicianAccessOption,
+  UserAuthMethod,
+  UserItem,
+} from "@/features/users/types";
 import {
   createAdminResourceRequest,
   deleteAdminResourceRequest,
@@ -10,8 +15,13 @@ import {
   updateAdminResourceRequest,
 } from "@/lib/services/admin-resource-api-service";
 
-const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) => {
+const useUserManager = (
+  initialUsers: UserItem[],
+  managedRole: ManagedUserRole,
+  initialAvailableTechnicians: TechnicianAccessOption[] = [],
+) => {
   const [users, setUsers] = useState(initialUsers);
+  const [availableTechnicians, setAvailableTechnicians] = useState(initialAvailableTechnicians);
   const [editing, setEditing] = useState<UserItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const defaultAuthMethod: UserAuthMethod = managedRole === "admin" ? "email" : "phone";
@@ -84,13 +94,19 @@ const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) 
   };
 
   const saveUser = (data: FormData) => {
+    const technicianId = String(data.get("technicianId") ?? "");
     const body = {
       authMethod,
-      email: String(data.get("email") ?? ""),
-      phone: String(data.get("phone") ?? ""),
       password: String(data.get("password") ?? ""),
-      fullName: String(data.get("fullName") ?? ""),
       role: managedRole,
+      ...(managedRole === "admin"
+        ? {
+            email: String(data.get("email") ?? ""),
+            fullName: String(data.get("fullName") ?? ""),
+          }
+        : {
+            technicianId,
+          }),
     };
 
     resetMutations();
@@ -99,9 +115,9 @@ const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) 
         {
           id: editing.id,
           body: {
-            fullName: body.fullName,
+            fullName: String(data.get("fullName") ?? ""),
             role: body.role,
-            ...(editing.phone ? { phone: body.phone } : {}),
+            ...(editing.phone ? { phone: String(data.get("phone") ?? "") } : {}),
           },
         },
         {
@@ -122,6 +138,11 @@ const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) 
           ...current,
           { ...created, createdAt: String(created.createdAt) },
         ].sort((first, second) => first.fullName.localeCompare(second.fullName)));
+        if (managedRole === "technician") {
+          setAvailableTechnicians((current) => current.filter(
+            (technician) => technician.id !== technicianId,
+          ));
+        }
         closeForm();
       },
     });
@@ -151,6 +172,7 @@ const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) 
   };
 
   return {
+    availableTechnicians,
     authMethod,
     closeForm,
     closePasswordReset,

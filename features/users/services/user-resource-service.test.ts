@@ -134,7 +134,7 @@ describe("user resource service", () => {
     expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
-  it("guarda los telefonos sin espacios ni caracteres de formato", async () => {
+  it("crea el acceso con los datos del tecnico seleccionado", async () => {
     mocks.assertUserManager.mockResolvedValue({
       id: "admin-1",
       tenantId: "tenant-1",
@@ -147,12 +147,19 @@ describe("user resource service", () => {
       role: "technician",
       isActive: true,
     });
+    mocks.findTechnician.mockResolvedValue({
+      id: "technician-1",
+      tenantId: "tenant-1",
+      userId: null,
+      phone: "+593999999999",
+      name: "Tecnico Uno",
+      isActive: true,
+    });
 
     await createUser({
       authMethod: "phone",
-      fullName: "Tecnico Uno",
       password: "Temporal123",
-      phone: "099 999-9999",
+      technicianId: "technician-1",
     });
 
     expect(mocks.createAuthUser).toHaveBeenCalledWith(expect.objectContaining({
@@ -161,8 +168,30 @@ describe("user resource service", () => {
       user_metadata: expect.objectContaining({
         auth_method: "phone",
         login_phone: "+593999999999",
+        full_name: "Tecnico Uno",
       }),
     }));
+    expect(mocks.updateTechnician).toHaveBeenCalledWith({
+      where: { id: "technician-1", tenantId: "tenant-1" },
+      data: { userId: "user-1" },
+    });
+  });
+
+  it("rechaza un tecnico que no esta disponible en la empresa", async () => {
+    mocks.assertUserManager.mockResolvedValue({
+      id: "admin-1",
+      tenantId: "tenant-1",
+      role: "admin",
+      managedRole: "technician",
+    });
+
+    await expect(createUser({
+      authMethod: "phone",
+      password: "Temporal123",
+      technicianId: "technician-from-another-tenant",
+    })).rejects.toThrow("El técnico seleccionado no está disponible");
+
+    expect(mocks.createAuthUser).not.toHaveBeenCalled();
   });
 
   it("actualiza el telefono en Supabase y en el tecnico asociado", async () => {

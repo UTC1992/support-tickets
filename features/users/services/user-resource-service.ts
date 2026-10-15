@@ -19,7 +19,6 @@ export class UserResourceError extends Error {
 export const createUser = async (input: unknown) => {
   const actor = await assertUserManager();
   const payload = readObject(input);
-  const fullName = readRequiredString(payload, "fullName");
   const expectedAuthMethod = actor.managedRole === "admin" ? "email" : "phone";
   const authMethod = readAuthMethod(payload);
 
@@ -28,17 +27,19 @@ export const createUser = async (input: unknown) => {
   }
 
   assertRequestedRole(payload, actor.managedRole);
+  const technician = actor.managedRole === "technician"
+    ? await findAvailableTechnician(
+        actor.tenantId,
+        readRequiredString(payload, "technicianId"),
+      )
+    : null;
+  const fullName = technician?.name ?? readRequiredString(payload, "fullName");
   const email = authMethod === "email" ? readEmail(payload) : null;
-  const phone = authMethod === "phone" ? readPhone(payload) : null;
+  const phone = technician ? normalizePhone(technician.phone) : null;
   const password = readPassword(payload);
-  const matchingTechnicians = phone
-    ? await findTechniciansByPhone(actor.tenantId, phone)
-    : [];
-  const linkedTechnician = matchingTechnicians.find((technician) => technician.userId);
-  const availableTechnician = matchingTechnicians.find((technician) => !technician.userId);
 
-  if (linkedTechnician) {
-    throw new UserResourceError("Ese teléfono ya está registrado");
+  if (technician && !/^\+593\d{8,9}$/.test(phone ?? "")) {
+    throw new UserResourceError("El técnico seleccionado no tiene un teléfono válido");
   }
 
   const supabaseAdmin = createSupabaseAdminClient();
@@ -78,23 +79,11 @@ export const createUser = async (input: unknown) => {
         },
       });
 
-      if (actor.managedRole === "technician") {
-        if (availableTechnician) {
-          await tx.technician.update({
-            where: { id: availableTechnician.id, tenantId: actor.tenantId },
-            data: { userId, name: fullName, phone, isActive: true },
-          });
-        } else {
-          await tx.technician.create({
-            data: {
-              tenantId: actor.tenantId,
-              userId,
-              name: fullName,
-              phone,
-              isActive: true,
-            },
-          });
-        }
+      if (technician) {
+        await tx.technician.update({
+          where: { id: technician.id, tenantId: actor.tenantId },
+          data: { userId },
+        });
       }
 
       return createdProfile;
@@ -105,6 +94,25 @@ export const createUser = async (input: unknown) => {
     await supabaseAdmin.auth.admin.deleteUser(userId);
     throw new UserResourceError("No se pudo crear el perfil del usuario");
   }
+};
+
+const findAvailableTechnician = async (tenantId: string, technicianId: string) => {
+  const technician = await prisma.technician.findFirst({
+    where: {
+      id: technicianId,
+      tenantId,
+      isActive: true,
+      userId: null,
+      phone: { not: null },
+    },
+    select: { id: true, name: true, phone: true },
+  });
+
+  if (!technician?.phone) {
+    throw new UserResourceError("El técnico seleccionado no está disponible");
+  }
+
+  return { ...technician, phone: technician.phone };
 };
 
 export const updateUser = async (id: string, input: unknown) => {
