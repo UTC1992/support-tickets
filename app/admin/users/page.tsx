@@ -8,7 +8,7 @@ import requireAdmin from "@/lib/auth/admin";
 const UsersContent = async () => {
   const [users, currentUser] = await Promise.all([listUsers(), requireAdmin()]);
   const initialUsers = users.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() }));
-  return <><PageHeader title="Usuarios" description="Perfiles autorizados para acceder al sistema." /><UserManager initialUsers={initialUsers} currentUserId={currentUser.id} /></>;
+  return <><PageHeader title="Accesos técnicos" description="Técnicos autorizados para ingresar al sistema." /><UserManager initialUsers={initialUsers} currentUserId={currentUser.id} managedRole="technician" /></>;
 };
 
 const UsersPage = () => <Suspense fallback={<PageLoading />}><UsersContent /></Suspense>;

@@ -52,10 +52,10 @@ const ticketInclude = {
   technician: true,
 } satisfies Prisma.TicketInclude;
 
-export const listTickets = async (filters: TicketFilters) => {
+export const listTickets = async (tenantId: string, filters: TicketFilters) => {
   const take = clampLimit(filters.limit);
   const page = clampPage(filters.page);
-  const where = buildTicketWhere(filters);
+  const where = buildTicketWhere(tenantId, filters);
   const [tickets, total] = await prisma.$transaction([
     prisma.ticket.findMany({
       where,
@@ -79,21 +79,22 @@ export const listTickets = async (filters: TicketFilters) => {
 };
 
 export const listTechnicianTickets = async (
+  tenantId: string,
   technicianId: string,
   filters: TicketFilters,
-) => listTickets({ ...filters, technicianId });
+) => listTickets(tenantId, { ...filters, technicianId });
 
-export const listTicketsForExport = async (filters: TicketFilters) => {
+export const listTicketsForExport = async (tenantId: string, filters: TicketFilters) => {
   return prisma.ticket.findMany({
-    where: buildTicketWhere(filters),
+    where: buildTicketWhere(tenantId, filters),
     include: ticketInclude,
     orderBy: [{ intakeDate: "desc" }, { createdAt: "desc" }],
   });
 };
 
-export const getTicket = async (id: string) => {
-  const ticket = await prisma.ticket.findUnique({
-    where: { id },
+export const getTicket = async (tenantId: string, id: string) => {
+  const ticket = await prisma.ticket.findFirst({
+    where: { id, tenantId },
     include: {
       ...ticketInclude,
       history: {
@@ -110,18 +111,31 @@ export const getTicket = async (id: string) => {
   return ticket;
 };
 
-export const createTicket = async (input: unknown) => {
-  const data = parseCreateInput(input);
+export const createTicket = async (
+  tenantId: string,
+  actorId: string,
+  input: unknown,
+) => {
+  const payload = readObject(input);
+  const data = parseCreateInput(payload);
 
   return prisma.$transaction(async (tx) => {
+    await assertTenantRelations(tx, tenantId, payload);
     const ticket = await tx.ticket.create({
-      data,
+      data: {
+        ...data,
+        tenantId,
+        createdBy: actorId,
+        updatedBy: actorId,
+      },
       include: ticketInclude,
     });
 
     await tx.ticketHistory.create({
       data: {
+        tenantId,
         ticketId: ticket.id,
+        actorId,
         eventType: "created",
         newValue: ticket as unknown as Prisma.InputJsonValue,
       },
@@ -131,25 +145,34 @@ export const createTicket = async (input: unknown) => {
   });
 };
 
-export const updateTicket = async (id: string, input: unknown) => {
-  const data = parseUpdateInput(input);
+export const updateTicket = async (
+  tenantId: string,
+  actorId: string,
+  id: string,
+  input: unknown,
+) => {
+  const payload = readObject(input);
+  const data = parseUpdateInput(payload);
 
   return prisma.$transaction(async (tx) => {
-    const previous = await tx.ticket.findUnique({ where: { id } });
+    const previous = await tx.ticket.findFirst({ where: { id, tenantId } });
 
     if (!previous) {
       throw new Error("Ticket not found");
     }
 
+    await assertTenantRelations(tx, tenantId, payload);
     const ticket = await tx.ticket.update({
-      where: { id },
-      data,
+      where: { id, tenantId },
+      data: { ...data, updatedBy: actorId },
       include: ticketInclude,
     });
 
     await tx.ticketHistory.create({
       data: {
+        tenantId,
         ticketId: ticket.id,
+        actorId,
         eventType: "updated",
         oldValue: previous as unknown as Prisma.InputJsonValue,
         newValue: ticket as unknown as Prisma.InputJsonValue,
@@ -162,6 +185,7 @@ export const updateTicket = async (id: string, input: unknown) => {
 
 export const updateTechnicianTicket = async (
   id: string,
+  tenantId: string,
   technicianId: string,
   actorId: string,
   input: unknown,
@@ -170,7 +194,7 @@ export const updateTechnicianTicket = async (
 
   return prisma.$transaction(async (tx) => {
     const previous = await tx.ticket.findFirst({
-      where: { id, technicianId },
+      where: { id, tenantId, technicianId },
     });
 
     if (!previous) {
@@ -179,13 +203,14 @@ export const updateTechnicianTicket = async (
 
     const data = parseTechnicianUpdateInput(payload, previous.status);
     const ticket = await tx.ticket.update({
-      where: { id, technicianId },
+      where: { id, tenantId, technicianId },
       data: { ...data, updatedBy: actorId },
       include: ticketInclude,
     });
 
     await tx.ticketHistory.create({
       data: {
+        tenantId,
         ticketId: ticket.id,
         actorId,
         eventType: "technician_updated",
@@ -198,17 +223,22 @@ export const updateTechnicianTicket = async (
   });
 };
 
-export const deleteTicket = async (id: string) => {
-  const ticket = await prisma.ticket.findUnique({ where: { id }, select: { id: true } });
+export const deleteTicket = async (tenantId: string, id: string) => {
+  const ticket = await prisma.ticket.findFirst({
+    where: { id, tenantId },
+    select: { id: true },
+  });
 
   if (!ticket) {
     throw new Error("Ticket not found");
   }
 
-  await prisma.ticket.delete({ where: { id } });
+  await prisma.ticket.delete({ where: { id, tenantId } });
 };
 
-const parseCreateInput = (input: unknown): Prisma.TicketCreateInput => {
+const parseCreateInput = (
+  input: unknown,
+): Omit<Prisma.TicketUncheckedCreateInput, "tenantId"> => {
   const payload = readObject(input);
   const clientName = readRequiredString(payload, "clientName");
 
@@ -217,9 +247,9 @@ const parseCreateInput = (input: unknown): Prisma.TicketCreateInput => {
     clientPhone: readOptionalString(payload, "clientPhone"),
     clientIp: readOptionalString(payload, "clientIp"),
     sector: readOptionalString(payload, "sector"),
-    zone: connectOptional(payload, "zoneId"),
-    supportType: connectOptional(payload, "supportTypeId"),
-    technician: connectOptional(payload, "technicianId"),
+    zoneId: readOptionalString(payload, "zoneId"),
+    supportTypeId: readOptionalString(payload, "supportTypeId"),
+    technicianId: readOptionalString(payload, "technicianId"),
     status: parseStatus(readOptionalString(payload, "status") ?? "pending"),
     priority: parsePriority(readOptionalString(payload, "priority") ?? "normal"),
     intakeDate: parseDate(readOptionalString(payload, "intakeDate")),
@@ -380,11 +410,6 @@ const parseOptionalDateTime = (payload: Record<string, unknown>, key: string) =>
   return date;
 };
 
-const connectOptional = (payload: Record<string, unknown>, key: string) => {
-  const id = readOptionalString(payload, key);
-  return id ? { connect: { id } } : undefined;
-};
-
 const connectNullable = (value: unknown) => {
   if (value === null || value === "") return { disconnect: true };
   if (typeof value !== "string") throw new Error("Relation id must be a string or null");
@@ -409,8 +434,8 @@ const assignNullableString = (
   }
 };
 
-const buildTicketWhere = (filters: TicketFilters) => {
-  const where: Prisma.TicketWhereInput = {};
+const buildTicketWhere = (tenantId: string, filters: TicketFilters) => {
+  const where: Prisma.TicketWhereInput = { tenantId };
 
   if (filters.status) where.status = parseStatus(filters.status);
   if (filters.technicianId) where.technicianId = filters.technicianId;
@@ -436,6 +461,32 @@ const buildTicketWhere = (filters: TicketFilters) => {
   }
 
   return where;
+};
+
+const assertTenantRelations = async (
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  payload: Record<string, unknown>,
+) => {
+  const zoneId = readRelationId(payload, "zoneId");
+  const supportTypeId = readRelationId(payload, "supportTypeId");
+  const technicianId = readRelationId(payload, "technicianId");
+  const [zone, supportType, technician] = await Promise.all([
+    zoneId ? tx.zone.findFirst({ where: { id: zoneId, tenantId }, select: { id: true } }) : null,
+    supportTypeId ? tx.supportType.findFirst({ where: { id: supportTypeId, tenantId }, select: { id: true } }) : null,
+    technicianId ? tx.technician.findFirst({ where: { id: technicianId, tenantId }, select: { id: true } }) : null,
+  ]);
+
+  if ((zoneId && !zone) || (supportTypeId && !supportType) || (technicianId && !technician)) {
+    throw new Error("Related resource not found");
+  }
+};
+
+const readRelationId = (payload: Record<string, unknown>, key: string) => {
+  const value = payload[key];
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") throw new Error("Relation id must be a string or null");
+  return value;
 };
 
 const clampLimit = (value?: string | null) => {

@@ -18,7 +18,7 @@ const renderUserManager = () => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <UserManager initialUsers={[]} currentUserId="admin-1" />
+      <UserManager initialUsers={[]} currentUserId="owner-1" managedRole="admin" />
     </QueryClientProvider>,
   );
 };
@@ -40,7 +40,7 @@ const renderPhoneUserManager = () => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <UserManager initialUsers={[phoneUser]} currentUserId="admin-1" />
+      <UserManager initialUsers={[phoneUser]} currentUserId="admin-1" managedRole="technician" />
     </QueryClientProvider>,
   );
 };
@@ -49,11 +49,11 @@ describe("UserManager", () => {
   it("solicita una contrasena temporal al crear un usuario con correo", () => {
     renderUserManager();
 
-    fireEvent.click(screen.getByRole("button", { name: "Crear usuario" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear administrador" }));
 
     expect(screen.getByLabelText("Correo")).toBeRequired();
     expect(screen.getByLabelText("Contraseña temporal")).toBeRequired();
-    expect(screen.getByLabelText("Rol")).toBeInTheDocument();
+    expect(screen.getByText("Rol: Administrador.")).toBeInTheDocument();
   });
 
   it("permite editar y normaliza el telefono de acceso", () => {

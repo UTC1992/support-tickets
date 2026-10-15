@@ -1,15 +1,16 @@
 import "server-only";
 
-import requireBackOffice from "@/lib/auth/back-office";
+import requireDashboardAccess from "@/lib/auth/dashboard";
 import prisma from "@/lib/db/prisma";
 
 const getDashboardSummary = async () => {
-  await requireBackOffice();
+  const profile = await requireDashboardAccess();
+  const tenantWhere = { tenantId: profile.tenantId };
   const [total, open, unassigned, completed] = await Promise.all([
-    prisma.ticket.count(),
-    prisma.ticket.count({ where: { status: { in: ["pending", "assigned", "in_progress", "rescheduled"] } } }),
-    prisma.ticket.count({ where: { technicianId: null } }),
-    prisma.ticket.count({ where: { status: "completed" } }),
+    prisma.ticket.count({ where: tenantWhere }),
+    prisma.ticket.count({ where: { ...tenantWhere, status: { in: ["pending", "assigned", "in_progress", "rescheduled"] } } }),
+    prisma.ticket.count({ where: { ...tenantWhere, technicianId: null } }),
+    prisma.ticket.count({ where: { ...tenantWhere, status: "completed" } }),
   ]);
 
   return { total, open, unassigned, completed };

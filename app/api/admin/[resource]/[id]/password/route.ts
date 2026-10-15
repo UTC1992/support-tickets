@@ -1,4 +1,5 @@
 import { AdminAccessError } from "@/lib/auth/admin";
+import { UserManagerAccessError } from "@/lib/auth/user-manager";
 import { jsonResponse } from "@/lib/http/json";
 import {
   resetUserPassword,
@@ -22,8 +23,11 @@ const PATCH = async (request: Request, context: RouteContext) => {
     if (error instanceof AdminAccessError) {
       return jsonResponse({ error: error.message }, { status: error.status });
     }
+    if (error instanceof UserManagerAccessError) {
+      return jsonResponse({ error: error.message }, { status: error.status });
+    }
     if (error instanceof UserResourceError) {
-      return jsonResponse({ error: error.message }, { status: 400 });
+      return jsonResponse({ error: error.message }, { status: error.status });
     }
     return jsonResponse(
       { error: "No se pudo restablecer la contraseña" },

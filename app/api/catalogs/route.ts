@@ -4,8 +4,8 @@ import listCatalogs from "@/lib/services/catalogs";
 
 const GET = async () => {
   try {
-    await assertBackOffice();
-    const catalogs = await listCatalogs();
+    const profile = await assertBackOffice();
+    const catalogs = await listCatalogs(profile.tenantId);
     return jsonResponse(catalogs);
   } catch (error) {
     const status = error instanceof BackOfficeAccessError ? error.status : 500;

@@ -7,7 +7,7 @@ describe("DashboardSummary", () => {
     render(
       <DashboardSummary
         summary={{ total: 12, open: 7, unassigned: 3, completed: 5 }}
-        ticketsHref="/office/tickets"
+        ticketsHref="/admin/tickets"
         description="Estado operativo de los soportes."
       />,
     );
@@ -18,7 +18,7 @@ describe("DashboardSummary", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getAllByRole("link")).toSatisfy((links: HTMLElement[]) =>
-      links.every((link) => link.getAttribute("href") === "/office/tickets"),
+      links.every((link) => link.getAttribute("href") === "/admin/tickets"),
     );
   });
 });

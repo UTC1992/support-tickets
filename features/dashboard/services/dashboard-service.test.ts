@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import requireBackOffice from "@/lib/auth/back-office";
+import requireDashboardAccess from "@/lib/auth/dashboard";
 import prisma from "@/lib/db/prisma";
 import getDashboardSummary from "@/features/dashboard/services/dashboard-service";
 
-vi.mock("@/lib/auth/back-office", () => ({ default: vi.fn() }));
+vi.mock("@/lib/auth/dashboard", () => ({ default: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({
   default: {
     ticket: {
@@ -14,11 +14,12 @@ vi.mock("@/lib/db/prisma", () => ({
 
 describe("getDashboardSummary", () => {
   beforeEach(() => {
-    vi.mocked(requireBackOffice).mockReset();
+    vi.mocked(requireDashboardAccess).mockReset();
+    vi.mocked(requireDashboardAccess).mockResolvedValue({ tenantId: "tenant-1" } as never);
     vi.mocked(prisma.ticket.count).mockReset();
   });
 
-  it("valida el acceso de oficina antes de consultar el resumen", async () => {
+  it("limita el resumen al tenant del owner o administrador", async () => {
     vi.mocked(prisma.ticket.count)
       .mockResolvedValueOnce(12)
       .mockResolvedValueOnce(7)
@@ -31,8 +32,11 @@ describe("getDashboardSummary", () => {
       unassigned: 3,
       completed: 5,
     });
-    expect(requireBackOffice).toHaveBeenCalledOnce();
-    expect(vi.mocked(requireBackOffice).mock.invocationCallOrder[0]).toBeLessThan(
+    expect(requireDashboardAccess).toHaveBeenCalledOnce();
+    expect(prisma.ticket.count).toHaveBeenNthCalledWith(1, {
+      where: { tenantId: "tenant-1" },
+    });
+    expect(vi.mocked(requireDashboardAccess).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(prisma.ticket.count).mock.invocationCallOrder[0],
     );
   });

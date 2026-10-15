@@ -8,7 +8,7 @@ type DashboardSummaryProps = {
     unassigned: number;
     completed: number;
   };
-  ticketsHref: string;
+  ticketsHref?: string;
   description: string;
 };
 
@@ -31,16 +31,17 @@ const DashboardSummary = ({ summary, ticketsHref, description }: DashboardSummar
           const Icon = item.icon;
 
           return (
-            <Link key={item.label} href={ticketsHref} className="rounded-md border border-zinc-200 bg-white p-4 transition hover:border-zinc-400">
+            <div key={item.label} className="rounded-md border border-zinc-200 bg-white p-4">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm text-zinc-600">{item.label}</p>
                 <Icon aria-hidden="true" className={`size-5 ${item.color}`} />
               </div>
               <p className="mt-3 text-3xl font-semibold tabular-nums text-zinc-950">{item.value}</p>
-            </Link>
+            </div>
           );
         })}
       </div>
+      {ticketsHref ? <Link href={ticketsHref} className="mt-4 inline-flex text-sm font-medium text-zinc-700 hover:text-zinc-950">Ver soportes</Link> : null}
     </>
   );
 };

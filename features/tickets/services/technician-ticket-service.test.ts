@@ -40,20 +40,21 @@ describe("updateTechnicianTicket", () => {
   it("permite iniciar solo un soporte asignado al tecnico", async () => {
     await updateTechnicianTicket(
       "ticket-1",
+      "tenant-1",
       "technician-1",
       "user-1",
       { status: "in_progress", clientName: "No debe cambiar" },
     );
 
     expect(mocks.findFirst).toHaveBeenCalledWith({
-      where: { id: "ticket-1", technicianId: "technician-1" },
+      where: { id: "ticket-1", tenantId: "tenant-1", technicianId: "technician-1" },
     });
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: "in_progress" }),
-      where: { id: "ticket-1", technicianId: "technician-1" },
+      where: { id: "ticket-1", tenantId: "tenant-1", technicianId: "technician-1" },
     }));
     expect(mocks.historyCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ actorId: "user-1", eventType: "technician_updated" }),
+      data: expect.objectContaining({ tenantId: "tenant-1", actorId: "user-1", eventType: "technician_updated" }),
     }));
     expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
@@ -63,6 +64,7 @@ describe("updateTechnicianTicket", () => {
 
     await expect(updateTechnicianTicket(
       "ticket-2",
+      "tenant-1",
       "technician-1",
       "user-1",
       { status: "in_progress" },
@@ -80,6 +82,7 @@ describe("updateTechnicianTicket", () => {
 
     await expect(updateTechnicianTicket(
       "ticket-1",
+      "tenant-1",
       "technician-1",
       "user-1",
       { status: "completed", resultNotes: "" },
@@ -95,6 +98,7 @@ describe("updateTechnicianTicket", () => {
 
     await expect(updateTechnicianTicket(
       "ticket-1",
+      "tenant-1",
       "technician-1",
       "user-1",
       { status: "rescheduled", resultNotes: "Cliente ausente" },

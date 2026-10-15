@@ -1,12 +1,13 @@
 import "server-only";
 
-import requireAdmin from "@/lib/auth/admin";
+import requireUserManager from "@/lib/auth/user-manager";
 import createSupabaseAdminClient from "@/lib/auth/supabase-admin";
 import prisma from "@/lib/db/prisma";
 
 const listUsers = async () => {
-  await requireAdmin();
+  const actor = await requireUserManager();
   const profiles = await prisma.profile.findMany({
+    where: { tenantId: actor.tenantId, role: actor.managedRole },
     orderBy: { fullName: "asc" },
     select: { id: true, fullName: true, role: true, isActive: true, createdAt: true },
   });
@@ -34,6 +35,7 @@ const listUsers = async () => {
 
   return profiles.map((profile) => ({
     ...profile,
+    role: profile.role as "admin" | "technician",
     email: identities.get(profile.id)?.email ?? null,
     phone: identities.get(profile.id)?.phone ?? null,
   }));

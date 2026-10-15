@@ -4,14 +4,18 @@ import { KeyRound, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { FormEvent } from "react";
 import PasswordInput from "@/features/auth/components/PasswordInput";
 import useUserManager from "@/features/users/hooks/useUserManager";
-import type { UserItem } from "@/features/users/types";
+import type { ManagedUserRole, UserItem } from "@/features/users/types";
 import { formatPhoneForDisplay } from "@/lib/services/phone";
 
-type UserManagerProps = { initialUsers: UserItem[]; currentUserId: string };
+type UserManagerProps = {
+  initialUsers: UserItem[];
+  currentUserId: string;
+  managedRole: ManagedUserRole;
+};
 
-const roleLabels = { admin: "Administrador", office: "Oficina", technician: "Técnico" };
+const roleLabels = { admin: "Administrador", technician: "Técnico" };
 
-const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
+const UserManager = ({ initialUsers, currentUserId, managedRole }: UserManagerProps) => {
   const {
     authMethod,
     closeForm,
@@ -27,11 +31,10 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
     passwordUser,
     resetPassword,
     saveUser,
-    setAuthMethod,
     successMessage,
     toggleActive,
     users,
-  } = useUserManager(initialUsers);
+  } = useUserManager(initialUsers, managedRole);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,9 +54,9 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700"><Plus className="size-4" /> Crear usuario</button>
+        <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700"><Plus className="size-4" /> Crear {managedRole === "admin" ? "administrador" : "técnico"}</button>
       </div>
-      <p className="mb-4 text-sm text-zinc-600">Crea accesos con correo o teléfono y una contraseña temporal.</p>
+      <p className="mb-4 text-sm text-zinc-600">Crea accesos con {managedRole === "admin" ? "correo" : "teléfono"} y una contraseña temporal.</p>
       {successMessage ? <p className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{successMessage}</p> : null}
       {error && !isOpen ? <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
       <div className="overflow-hidden border-y border-zinc-200 bg-white sm:rounded-md sm:border">
@@ -75,18 +78,13 @@ const UserManager = ({ initialUsers, currentUserId }: UserManagerProps) => {
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 sm:place-items-center sm:p-4" role="dialog" aria-modal="true">
           <form onSubmit={handleSubmit} className="w-full bg-white p-5 shadow-xl sm:max-w-md sm:rounded-md">
             <div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-semibold">{editing ? "Editar usuario" : "Crear usuario"}</h3><button type="button" onClick={closeForm} aria-label="Cerrar" className="grid size-9 place-items-center rounded-md hover:bg-zinc-100"><X className="size-5" /></button></div>
-            {!editing ? (
-              <div className="mb-4 grid grid-cols-2 rounded-md bg-zinc-100 p-1" aria-label="Metodo de acceso">
-                <button type="button" onClick={() => setAuthMethod("email")} className={`h-9 rounded px-3 text-sm font-medium ${authMethod === "email" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-600"}`}>Correo</button>
-                <button type="button" onClick={() => setAuthMethod("phone")} className={`h-9 rounded px-3 text-sm font-medium ${authMethod === "phone" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-600"}`}>Teléfono</button>
-              </div>
-            ) : null}
+            <input type="hidden" name="role" value={managedRole} />
             {!editing && authMethod === "email" ? <label className="block text-sm font-medium">Correo<input name="email" type="email" required autoFocus autoComplete="email" placeholder="usuario@empresa.com" className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             {!editing && authMethod === "phone" ? <label className="block text-sm font-medium">Teléfono<input name="phone" type="tel" required autoFocus autoComplete="tel" placeholder="0999999999" onBlur={(event) => { event.currentTarget.value = formatPhoneForDisplay(event.currentTarget.value); }} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
             {!editing ? <div className="mt-4"><PasswordInput name="password" label="Contraseña temporal" minLength={8} required autoComplete="new-password" /></div> : null}
             <label className={`${editing ? "" : "mt-4"} block text-sm font-medium`}>Nombre completo<input name="fullName" defaultValue={editing?.fullName} required autoFocus={Boolean(editing)} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label>
             {editing?.phone ? <label className="mt-4 block text-sm font-medium">Teléfono<input name="phone" type="tel" required autoComplete="tel" defaultValue={formatPhoneForDisplay(editing.phone)} placeholder="0999999999" onBlur={(event) => { event.currentTarget.value = formatPhoneForDisplay(event.currentTarget.value); }} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 px-3 text-base outline-none focus:border-zinc-900" /></label> : null}
-            {editing || authMethod === "email" ? <label className="mt-4 block text-sm font-medium">Rol<select name="role" defaultValue={editing?.role ?? "office"} className="mt-1.5 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base"><option value="office">Oficina</option><option value="technician">Técnico</option><option value="admin">Administrador</option></select></label> : <p className="mt-4 text-sm text-zinc-600">El acceso por teléfono se creará con rol Técnico.</p>}
+            <p className="mt-4 text-sm text-zinc-600">Rol: {roleLabels[managedRole]}.</p>
             {error ? <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p> : null}
             <div className="mt-6 flex justify-end gap-2"><button type="button" onClick={closeForm} className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium">Cancelar</button><button type="submit" disabled={isSaving} className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white disabled:bg-zinc-400">{isSaving ? "Guardando..." : "Guardar"}</button></div>
           </form>

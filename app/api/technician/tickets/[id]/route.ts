@@ -13,6 +13,7 @@ const PATCH = async (request: Request, context: TechnicianTicketRouteContext) =>
     const payload = await request.json();
     const ticket = await updateTechnicianTicket(
       id,
+      profile.tenantId,
       technician.id,
       profile.id,
       payload,

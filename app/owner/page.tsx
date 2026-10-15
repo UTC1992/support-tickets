@@ -3,15 +3,15 @@ import DashboardSummary from "@/features/dashboard/components/DashboardSummary";
 import getDashboardSummary from "@/features/dashboard/services/dashboard-service";
 import PageLoading from "@/features/navigation/components/PageLoading";
 
-const DashboardContent = async () => {
+const OwnerDashboardContent = async () => {
   const summary = await getDashboardSummary();
-  return <DashboardSummary summary={summary} ticketsHref="/office/tickets" description="Estado operativo de los soportes." />;
+  return <DashboardSummary summary={summary} description="Resumen de los soportes de la empresa." />;
 };
 
-const OfficePage = () => (
+const OwnerPage = () => (
   <Suspense fallback={<PageLoading />}>
-    <DashboardContent />
+    <OwnerDashboardContent />
   </Suspense>
 );
 
-export default OfficePage;
+export default OwnerPage;

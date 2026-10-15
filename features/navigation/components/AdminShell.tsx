@@ -11,7 +11,7 @@ const navItems = [
   { href: "/admin/technicians", label: "Técnicos", icon: Users },
   { href: "/admin/zones", label: "Zonas", icon: MapPin },
   { href: "/admin/support-types", label: "Tipos", icon: Tags },
-  { href: "/admin/users", label: "Usuarios", icon: UserRoundCog },
+  { href: "/admin/users", label: "Accesos", icon: UserRoundCog },
 ];
 
 type AdminShellProps = { children: ReactNode; userName: string };

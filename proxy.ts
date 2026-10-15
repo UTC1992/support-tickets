@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import createSupabaseProxyClient from "@/lib/auth/supabase-proxy";
 
 const publicPaths = ["/login", "/auth/callback", "/auth/confirm", "/set-password"];
-const protectedPathPrefixes = ["/admin", "/office", "/technician", "/tickets", "/dashboard"];
+const protectedPathPrefixes = ["/super-admin", "/owner", "/admin", "/technician", "/tickets", "/dashboard"];
 
 const redirectWithCookies = (destination: URL, response: NextResponse) => {
   const redirectResponse = NextResponse.redirect(destination);

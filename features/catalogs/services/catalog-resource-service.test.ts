@@ -4,9 +4,11 @@ import {
   updateCatalogResource,
 } from "@/features/catalogs/services/catalog-resource-service";
 import prisma from "@/lib/db/prisma";
+import { assertAdmin } from "@/lib/auth/admin";
 
 const mocks = vi.hoisted(() => ({
   createTechnician: vi.fn(),
+  findTechnician: vi.fn(),
   updateTechnician: vi.fn(),
 }));
 
@@ -15,6 +17,7 @@ vi.mock("@/lib/db/prisma", () => ({
   default: {
     technician: {
       create: mocks.createTechnician,
+      findFirst: mocks.findTechnician,
       findMany: vi.fn(),
       update: mocks.updateTechnician,
     },
@@ -24,7 +27,9 @@ vi.mock("@/lib/db/prisma", () => ({
 describe("catalog technician phones", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(assertAdmin).mockResolvedValue({ tenantId: "tenant-1" } as never);
     vi.mocked(prisma.technician.findMany).mockResolvedValue([]);
+    mocks.findTechnician.mockResolvedValue({ id: "technician-1" });
   });
 
   it("guarda el telefono nacional sin espacios en formato interno", async () => {
@@ -34,13 +39,18 @@ describe("catalog technician phones", () => {
     });
 
     expect(mocks.createTechnician).toHaveBeenCalledWith(expect.objectContaining({
-      data: { name: "Tecnico Uno", phone: "+593999999999" },
+      data: {
+        name: "Tecnico Uno",
+        phone: "+593999999999",
+        tenantId: "tenant-1",
+      },
     }));
   });
 
   it("rechaza un telefono repetido aunque tenga otro formato", async () => {
     vi.mocked(prisma.technician.findMany).mockResolvedValue([{
       id: "technician-1",
+      tenantId: "tenant-1",
       userId: null,
       name: "Tecnico Uno",
       phone: "+593 99 999 9999",
@@ -58,6 +68,7 @@ describe("catalog technician phones", () => {
   it("permite conservar el mismo telefono al editar su tecnico", async () => {
     vi.mocked(prisma.technician.findMany).mockResolvedValue([{
       id: "technician-1",
+      tenantId: "tenant-1",
       userId: null,
       name: "Tecnico Uno",
       phone: "+593999999999",
@@ -72,6 +83,7 @@ describe("catalog technician phones", () => {
     });
 
     expect(mocks.updateTechnician).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "technician-1", tenantId: "tenant-1" },
       data: expect.objectContaining({ phone: "+593999999999" }),
     }));
   });

@@ -5,10 +5,10 @@ import { listTechnicianTickets } from "@/lib/services/tickets";
 
 const GET = async (request: Request) => {
   try {
-    const { technician } = await assertTechnician();
+    const { profile, technician } = await assertTechnician();
     const { searchParams } = new URL(request.url);
     const filters = parseTicketFilters(searchParams);
-    const result = await listTechnicianTickets(technician.id, filters);
+    const result = await listTechnicianTickets(profile.tenantId, technician.id, filters);
 
     return jsonResponse(result);
   } catch (error) {

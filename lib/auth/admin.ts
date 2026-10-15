@@ -24,10 +24,17 @@ export const assertAdmin = async () => {
 
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
-    select: { id: true, fullName: true, role: true, isActive: true },
+    select: {
+      id: true,
+      tenantId: true,
+      fullName: true,
+      role: true,
+      isActive: true,
+      tenant: { select: { name: true, isActive: true } },
+    },
   });
 
-  if (!profile?.isActive || profile.role !== "admin") {
+  if (!profile?.isActive || !profile.tenant.isActive || profile.role !== "admin") {
     throw new AdminAccessError("No tienes permisos de administrador", 403);
   }
 

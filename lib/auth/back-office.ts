@@ -24,10 +24,17 @@ export const assertBackOffice = async () => {
 
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
-    select: { id: true, fullName: true, role: true, isActive: true },
+    select: {
+      id: true,
+      tenantId: true,
+      fullName: true,
+      role: true,
+      isActive: true,
+      tenant: { select: { name: true, isActive: true } },
+    },
   });
 
-  if (!profile?.isActive || !["admin", "office"].includes(profile.role)) {
+  if (!profile?.isActive || !profile.tenant.isActive || profile.role !== "admin") {
     throw new BackOfficeAccessError("No tienes permisos para gestionar soportes", 403);
   }
 

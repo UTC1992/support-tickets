@@ -24,19 +24,26 @@ export const assertTechnician = async () => {
 
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
-    select: { id: true, fullName: true, role: true, isActive: true },
+    select: {
+      id: true,
+      tenantId: true,
+      fullName: true,
+      role: true,
+      isActive: true,
+      tenant: { select: { name: true, isActive: true } },
+    },
   });
 
-  if (!profile?.isActive || profile.role !== "technician") {
+  if (!profile?.isActive || !profile.tenant.isActive || profile.role !== "technician") {
     throw new TechnicianAccessError("No tienes permisos de técnico", 403);
   }
 
   const technician = await prisma.technician.findUnique({
     where: { userId: user.id },
-    select: { id: true, name: true, isActive: true },
+    select: { id: true, tenantId: true, name: true, isActive: true },
   });
 
-  if (!technician?.isActive) {
+  if (!technician?.isActive || technician.tenantId !== profile.tenantId) {
     throw new TechnicianAccessError("No tienes un técnico activo asociado", 403);
   }
 

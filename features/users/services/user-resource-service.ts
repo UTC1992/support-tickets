@@ -1,29 +1,39 @@
 import "server-only";
 
-import type { AppRole, Prisma } from "@/generated/prisma/client";
-import { assertAdmin } from "@/lib/auth/admin";
+import type { Prisma } from "@/generated/prisma/client";
 import createSupabaseAdminClient from "@/lib/auth/supabase-admin";
+import { assertUserManager } from "@/lib/auth/user-manager";
 import prisma from "@/lib/db/prisma";
 import normalizePhone, { getPhoneAuthEmail } from "@/lib/services/phone";
 
 export class UserResourceError extends Error {
-  constructor(message: string) {
+  status: number;
+
+  constructor(message: string, status = 400) {
     super(message);
     this.name = "UserResourceError";
+    this.status = status;
   }
 }
 
 export const createUser = async (input: unknown) => {
-  await assertAdmin();
+  const actor = await assertUserManager();
   const payload = readObject(input);
   const fullName = readRequiredString(payload, "fullName");
+  const expectedAuthMethod = actor.managedRole === "admin" ? "email" : "phone";
   const authMethod = readAuthMethod(payload);
-  const role = authMethod === "phone" ? "technician" : readRole(payload);
+
+  if (authMethod !== expectedAuthMethod) {
+    throw new UserResourceError("El método de acceso no corresponde al rol permitido");
+  }
+
+  assertRequestedRole(payload, actor.managedRole);
   const email = authMethod === "email" ? readEmail(payload) : null;
   const phone = authMethod === "phone" ? readPhone(payload) : null;
   const password = readPassword(payload);
-  const supabaseAdmin = createSupabaseAdminClient();
-  const matchingTechnicians = phone ? await findTechniciansByPhone(phone) : [];
+  const matchingTechnicians = phone
+    ? await findTechniciansByPhone(actor.tenantId, phone)
+    : [];
   const linkedTechnician = matchingTechnicians.find((technician) => technician.userId);
   const availableTechnician = matchingTechnicians.find((technician) => !technician.userId);
 
@@ -31,6 +41,7 @@ export const createUser = async (input: unknown) => {
     throw new UserResourceError("Ese teléfono ya está registrado");
   }
 
+  const supabaseAdmin = createSupabaseAdminClient();
   const authResult = await supabaseAdmin.auth.admin.createUser({
     ...(email
       ? { email, email_confirm: true }
@@ -41,7 +52,7 @@ export const createUser = async (input: unknown) => {
       full_name: fullName,
       ...(phone ? { login_phone: phone } : {}),
       must_change_password: true,
-      role,
+      role: actor.managedRole,
     },
   });
 
@@ -59,18 +70,29 @@ export const createUser = async (input: unknown) => {
   try {
     const profile = await prisma.$transaction(async (tx) => {
       const createdProfile = await tx.profile.create({
-        data: { id: userId, fullName, role },
+        data: {
+          id: userId,
+          tenantId: actor.tenantId,
+          fullName,
+          role: actor.managedRole,
+        },
       });
 
-      if (role === "technician") {
+      if (actor.managedRole === "technician") {
         if (availableTechnician) {
           await tx.technician.update({
-            where: { id: availableTechnician.id },
+            where: { id: availableTechnician.id, tenantId: actor.tenantId },
             data: { userId, name: fullName, phone, isActive: true },
           });
         } else {
           await tx.technician.create({
-            data: { userId, name: fullName, phone, isActive: true },
+            data: {
+              tenantId: actor.tenantId,
+              userId,
+              name: fullName,
+              phone,
+              isActive: true,
+            },
           });
         }
       }
@@ -86,27 +108,27 @@ export const createUser = async (input: unknown) => {
 };
 
 export const updateUser = async (id: string, input: unknown) => {
-  const actor = await assertAdmin();
+  const actor = await assertUserManager();
+  const target = await requireManagedTarget(id, actor.tenantId, actor.managedRole);
   const payload = readObject(input);
+  assertRequestedRole(payload, actor.managedRole);
+
   const data: Prisma.ProfileUpdateInput = {};
-  const phone = has(payload, "phone") ? readPhone(payload) : undefined;
+  const phone = actor.managedRole === "technician" && has(payload, "phone")
+    ? readPhone(payload)
+    : undefined;
+
   if (has(payload, "fullName")) data.fullName = readRequiredString(payload, "fullName");
-  if (has(payload, "role")) data.role = readRole(payload);
   if (has(payload, "isActive")) data.isActive = readBoolean(payload, "isActive");
-  if (actor.id === id && (data.role !== undefined && data.role !== "admin" || data.isActive === false)) {
-    throw new UserResourceError("No puedes quitar tu propio acceso de administrador");
-  }
 
   if (phone) {
-    const duplicate = (await findTechniciansByPhone(phone)).find(
+    const duplicate = (await findTechniciansByPhone(actor.tenantId, phone)).find(
       (technician) => technician.userId
         ? technician.userId !== id
         : technician.isActive,
     );
 
-    if (duplicate) {
-      throw new UserResourceError("Ese teléfono ya está registrado");
-    }
+    if (duplicate) throw new UserResourceError("Ese teléfono ya está registrado");
   }
 
   const supabaseAdmin = phone ? createSupabaseAdminClient() : null;
@@ -136,6 +158,7 @@ export const updateUser = async (id: string, input: unknown) => {
           ...authResult.data.user.user_metadata,
           auth_method: "phone",
           login_phone: phone,
+          role: actor.managedRole,
         },
       });
 
@@ -154,13 +177,23 @@ export const updateUser = async (id: string, input: unknown) => {
 
   try {
     const profile = await prisma.$transaction(async (tx) => {
-      const updatedProfile = await tx.profile.update({ where: { id }, data });
-      const technician = await tx.technician.findUnique({ where: { userId: id } });
+      const updatedProfile = await tx.profile.update({
+        where: {
+          id: target.id,
+          tenantId: actor.tenantId,
+          role: actor.managedRole,
+        },
+        data,
+      });
 
-      if (updatedProfile.role === "technician") {
+      if (actor.managedRole === "technician") {
+        const technician = await tx.technician.findFirst({
+          where: { tenantId: actor.tenantId, userId: id },
+        });
+
         if (technician) {
           await tx.technician.update({
-            where: { id: technician.id },
+            where: { id: technician.id, tenantId: actor.tenantId },
             data: {
               name: updatedProfile.fullName,
               isActive: updatedProfile.isActive,
@@ -170,6 +203,7 @@ export const updateUser = async (id: string, input: unknown) => {
         } else {
           await tx.technician.create({
             data: {
+              tenantId: actor.tenantId,
               userId: id,
               name: updatedProfile.fullName,
               phone: phone ?? null,
@@ -177,11 +211,6 @@ export const updateUser = async (id: string, input: unknown) => {
             },
           });
         }
-      } else if (technician) {
-        await tx.technician.update({
-          where: { id: technician.id },
-          data: { isActive: false, ...(phone ? { phone } : {}) },
-        });
       }
 
       return updatedProfile;
@@ -202,9 +231,9 @@ export const updateUser = async (id: string, input: unknown) => {
 };
 
 export const resetUserPassword = async (id: string, input: unknown) => {
-  await assertAdmin();
-  const payload = readObject(input);
-  const password = readPassword(payload);
+  const actor = await assertUserManager();
+  await requireManagedTarget(id, actor.tenantId, actor.managedRole);
+  const password = readPassword(readObject(input));
   const supabaseAdmin = createSupabaseAdminClient();
   const authResult = await supabaseAdmin.auth.admin.getUserById(id);
 
@@ -226,28 +255,44 @@ export const resetUserPassword = async (id: string, input: unknown) => {
 };
 
 export const deleteUser = async (id: string) => {
-  const actor = await assertAdmin();
-  if (actor.id === id) throw new UserResourceError("No puedes eliminar tu propio perfil");
-
-  const technician = await prisma.technician.findUnique({
-    where: { userId: id },
-    select: { id: true },
-  });
+  const actor = await assertUserManager();
+  await requireManagedTarget(id, actor.tenantId, actor.managedRole);
+  const technician = actor.managedRole === "technician"
+    ? await prisma.technician.findFirst({
+        where: { tenantId: actor.tenantId, userId: id },
+        select: { id: true },
+      })
+    : null;
   const supabaseAdmin = createSupabaseAdminClient();
   const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+
   if (error) throw new UserResourceError("No se pudo eliminar la cuenta");
 
   if (technician) {
     await prisma.technician.update({
-      where: { id: technician.id },
+      where: { id: technician.id, tenantId: actor.tenantId },
       data: { isActive: false, phone: null },
     });
   }
 };
 
+const requireManagedTarget = async (
+  id: string,
+  tenantId: string,
+  role: "admin" | "technician",
+) => {
+  const target = await prisma.profile.findFirst({
+    where: { id, tenantId, role },
+    select: { id: true },
+  });
+
+  if (!target) throw new UserResourceError("El usuario no existe", 404);
+  return target;
+};
+
 const readObject = (input: unknown): Record<string, unknown> => {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new UserResourceError("Los datos enviados no son validos");
+    throw new UserResourceError("Los datos enviados no son válidos");
   }
 
   return input as Record<string, unknown>;
@@ -265,14 +310,17 @@ const readRequiredString = (payload: Record<string, unknown>, key: string) => {
 };
 
 const readBoolean = (payload: Record<string, unknown>, key: string) => {
-  if (typeof payload[key] !== "boolean") throw new UserResourceError(`${key} no es valido`);
+  if (typeof payload[key] !== "boolean") {
+    throw new UserResourceError(`${key} no es válido`);
+  }
+
   return payload[key];
 };
 
 const readEmail = (payload: Record<string, unknown>) => {
   const email = readRequiredString(payload, "email").toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new UserResourceError("El correo no es valido");
+    throw new UserResourceError("El correo no es válido");
   }
   return email;
 };
@@ -285,9 +333,9 @@ const readPhone = (payload: Record<string, unknown>) => {
   return phone;
 };
 
-const findTechniciansByPhone = async (phone: string) => {
+const findTechniciansByPhone = async (tenantId: string, phone: string) => {
   const technicians = await prisma.technician.findMany({
-    where: { phone: { not: null } },
+    where: { tenantId, phone: { not: null } },
     select: { id: true, isActive: true, phone: true, userId: true },
   });
 
@@ -312,10 +360,11 @@ const readAuthMethod = (payload: Record<string, unknown>) => {
   return method;
 };
 
-const readRole = (payload: Record<string, unknown>) => {
-  const role = readRequiredString(payload, "role");
-  if (!["admin", "office", "technician"].includes(role)) {
-    throw new UserResourceError("El rol no es valido");
+const assertRequestedRole = (
+  payload: Record<string, unknown>,
+  allowedRole: "admin" | "technician",
+) => {
+  if (has(payload, "role") && payload.role !== allowedRole) {
+    throw new UserResourceError("No puedes asignar ese rol", 403);
   }
-  return role as AppRole;
 };

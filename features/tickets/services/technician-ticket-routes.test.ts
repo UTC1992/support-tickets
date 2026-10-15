@@ -29,7 +29,7 @@ describe("rutas de soportes del tecnico", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.assertTechnician.mockResolvedValue({
-      profile: { id: "user-1" },
+      profile: { id: "user-1", tenantId: "tenant-1" },
       technician: { id: "technician-1" },
     });
     mocks.listTechnicianTickets.mockResolvedValue({
@@ -43,6 +43,7 @@ describe("rutas de soportes del tecnico", () => {
     await GET(new Request("http://localhost/api/technician/tickets?status=assigned&technicianId=otro"));
 
     expect(mocks.listTechnicianTickets).toHaveBeenCalledWith(
+      "tenant-1",
       "technician-1",
       expect.objectContaining({ status: "assigned" }),
     );
@@ -59,6 +60,7 @@ describe("rutas de soportes del tecnico", () => {
 
     expect(mocks.updateTechnicianTicket).toHaveBeenCalledWith(
       "ticket-1",
+      "tenant-1",
       "technician-1",
       "user-1",
       { status: "in_progress" },

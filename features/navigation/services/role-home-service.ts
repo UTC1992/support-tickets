@@ -1,8 +1,8 @@
 import type { AppRole } from "@/generated/prisma/client";
 
 const roleHomePaths: Record<AppRole, string> = {
+  owner: "/owner",
   admin: "/admin",
-  office: "/office",
   technician: "/technician/tickets",
 };
 

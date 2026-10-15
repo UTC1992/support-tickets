@@ -9,9 +9,9 @@ type TicketRouteContext = {
 
 const GET = async (_request: Request, context: TicketRouteContext) => {
   try {
-    await assertBackOffice();
+    const profile = await assertBackOffice();
     const { id } = await context.params;
-    const ticket = await getTicket(id);
+    const ticket = await getTicket(profile.tenantId, id);
     return jsonResponse({ ticket });
   } catch (error) {
     const status = error instanceof BackOfficeAccessError ? error.status : 404;
@@ -21,10 +21,10 @@ const GET = async (_request: Request, context: TicketRouteContext) => {
 
 const PATCH = async (request: Request, context: TicketRouteContext) => {
   try {
-    await assertBackOffice();
+    const profile = await assertBackOffice();
     const { id } = await context.params;
     const payload = await request.json();
-    const ticket = await updateTicket(id, payload);
+    const ticket = await updateTicket(profile.tenantId, profile.id, id, payload);
     return jsonResponse({ ticket });
   } catch (error) {
     const message = getErrorMessage(error);
@@ -40,9 +40,9 @@ const PATCH = async (request: Request, context: TicketRouteContext) => {
 
 const DELETE = async (_request: Request, context: TicketRouteContext) => {
   try {
-    await assertAdmin();
+    const profile = await assertAdmin();
     const { id } = await context.params;
-    await deleteTicket(id);
+    await deleteTicket(profile.tenantId, id);
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof AdminAccessError) {

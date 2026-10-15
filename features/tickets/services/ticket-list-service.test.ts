@@ -21,7 +21,7 @@ describe("listTickets", () => {
   });
 
   it("devuelve una pagina y el total usando los filtros", async () => {
-    const result = await listTickets({
+    const result = await listTickets("tenant-1", {
       limit: "20",
       page: "2",
       search: "cliente",
@@ -31,7 +31,7 @@ describe("listTickets", () => {
     expect(prisma.ticket.findMany).toHaveBeenCalledWith(expect.objectContaining({
       skip: 20,
       take: 20,
-      where: expect.objectContaining({ status: "completed" }),
+      where: expect.objectContaining({ tenantId: "tenant-1", status: "completed" }),
     }));
     expect(result).toEqual({
       tickets: [],
@@ -45,12 +45,15 @@ describe("listTickets", () => {
   });
 
   it("fuerza el tecnico autenticado aunque el cliente envie otro filtro", async () => {
-    await listTechnicianTickets("technician-authenticated", {
+    await listTechnicianTickets("tenant-1", "technician-authenticated", {
       technicianId: "technician-from-browser",
     });
 
     expect(prisma.ticket.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ technicianId: "technician-authenticated" }),
+      where: expect.objectContaining({
+        tenantId: "tenant-1",
+        technicianId: "technician-authenticated",
+      }),
     }));
   });
 });

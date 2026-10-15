@@ -6,9 +6,9 @@ import { listTicketsForExport } from "@/lib/services/tickets";
 
 const GET = async (request: Request) => {
   try {
-    await assertBackOffice();
+    const profile = await assertBackOffice();
     const { searchParams } = new URL(request.url);
-    const tickets = await listTicketsForExport(parseTicketFilters(searchParams));
+    const tickets = await listTicketsForExport(profile.tenantId, parseTicketFilters(searchParams));
     const workbook = await buildTicketWorkbook(tickets);
     const date = new Date().toISOString().slice(0, 10);
 

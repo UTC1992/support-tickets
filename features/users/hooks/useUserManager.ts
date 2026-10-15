@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { UserAuthMethod, UserItem } from "@/features/users/types";
+import type { ManagedUserRole, UserAuthMethod, UserItem } from "@/features/users/types";
 import {
   createAdminResourceRequest,
   deleteAdminResourceRequest,
@@ -10,11 +10,12 @@ import {
   updateAdminResourceRequest,
 } from "@/lib/services/admin-resource-api-service";
 
-const useUserManager = (initialUsers: UserItem[]) => {
+const useUserManager = (initialUsers: UserItem[], managedRole: ManagedUserRole) => {
   const [users, setUsers] = useState(initialUsers);
   const [editing, setEditing] = useState<UserItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [authMethod, setAuthMethod] = useState<UserAuthMethod>("email");
+  const defaultAuthMethod: UserAuthMethod = managedRole === "admin" ? "email" : "phone";
+  const [authMethod, setAuthMethod] = useState<UserAuthMethod>(defaultAuthMethod);
   const [passwordUser, setPasswordUser] = useState<UserItem | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -42,7 +43,7 @@ const useUserManager = (initialUsers: UserItem[]) => {
 
   const openCreate = () => {
     setEditing(null);
-    setAuthMethod("email");
+    setAuthMethod(defaultAuthMethod);
     setSuccessMessage(null);
     resetMutations();
     setIsOpen(true);
@@ -89,7 +90,7 @@ const useUserManager = (initialUsers: UserItem[]) => {
       phone: String(data.get("phone") ?? ""),
       password: String(data.get("password") ?? ""),
       fullName: String(data.get("fullName") ?? ""),
-      role: authMethod === "phone" ? "technician" : String(data.get("role") ?? "office"),
+      role: managedRole,
     };
 
     resetMutations();

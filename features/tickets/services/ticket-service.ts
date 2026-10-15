@@ -9,23 +9,23 @@ import {
 } from "@/lib/services/tickets";
 
 export const listManagedTickets = async () => {
-  await requireBackOffice();
-  return listTickets({ limit: "20", page: "1" });
+  const profile = await requireBackOffice();
+  return listTickets(profile.tenantId, { limit: "20", page: "1" });
 };
 
 export const getTicketCatalogs = async () => {
-  await requireBackOffice();
+  const profile = await requireBackOffice();
   const [zones, supportTypes, technicians] = await Promise.all([
-    prisma.zone.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.supportType.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.technician.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.zone.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.supportType.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.technician.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return { zones, supportTypes, technicians };
 };
 
 export const listAssignedTickets = async () => {
-  const { technician } = await requireTechnician();
+  const { profile, technician } = await requireTechnician();
 
-  return listTechnicianTickets(technician.id, { limit: "20", page: "1" });
+  return listTechnicianTickets(profile.tenantId, technician.id, { limit: "20", page: "1" });
 };

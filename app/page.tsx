@@ -13,12 +13,25 @@ const HomeRedirect = async () => {
     redirect("/login");
   }
 
-  const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
-    select: { role: true, isActive: true },
+  const platformAdmin = await prisma.platformAdmin.findUnique({
+    where: { userId: user.id },
+    select: { isActive: true },
   });
 
-  if (!profile?.isActive) {
+  if (platformAdmin?.isActive) {
+    redirect("/super-admin");
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: {
+      role: true,
+      isActive: true,
+      tenant: { select: { isActive: true } },
+    },
+  });
+
+  if (!profile?.isActive || !profile.tenant.isActive) {
     redirect("/access-denied");
   }
 

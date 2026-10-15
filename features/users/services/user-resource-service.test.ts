@@ -9,13 +9,14 @@ import {
 } from "@/features/users/services/user-resource-service";
 
 const mocks = vi.hoisted(() => ({
-  assertAdmin: vi.fn(),
+  assertUserManager: vi.fn(),
   createAuthUser: vi.fn(),
   createProfile: vi.fn(),
   createTechnician: vi.fn(),
   deleteAuthUser: vi.fn(),
   findTechnician: vi.fn(),
   findTechnicianByUser: vi.fn(),
+  findProfile: vi.fn(),
   getAuthUser: vi.fn(),
   updateAuthUser: vi.fn(),
   updateProfile: vi.fn(),
@@ -23,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/auth/admin", () => ({ assertAdmin: mocks.assertAdmin }));
+vi.mock("@/lib/auth/user-manager", () => ({ assertUserManager: mocks.assertUserManager }));
 vi.mock("@/lib/auth/supabase-admin", () => ({
   default: vi.fn(() => ({
     auth: {
@@ -38,9 +39,10 @@ vi.mock("@/lib/auth/supabase-admin", () => ({
 }));
 vi.mock("@/lib/db/prisma", () => ({
   default: {
+    profile: { findFirst: mocks.findProfile },
     technician: {
       findMany: vi.fn(),
-      findUnique: mocks.findTechnician,
+      findFirst: mocks.findTechnician,
       update: mocks.updateTechnician,
     },
     $transaction: vi.fn(async (callback) => callback({
@@ -50,7 +52,7 @@ vi.mock("@/lib/db/prisma", () => ({
       },
       technician: {
         create: mocks.createTechnician,
-        findUnique: mocks.findTechnicianByUser,
+        findFirst: mocks.findTechnicianByUser,
         update: mocks.updateTechnician,
       },
     })),
@@ -60,15 +62,21 @@ vi.mock("@/lib/db/prisma", () => ({
 describe("user resource service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.assertAdmin.mockResolvedValue({ id: "admin-1" });
+    mocks.assertUserManager.mockResolvedValue({
+      id: "owner-1",
+      tenantId: "tenant-1",
+      role: "owner",
+      managedRole: "admin",
+    });
+    mocks.findProfile.mockResolvedValue({ id: "user-1" });
     mocks.createAuthUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
       error: null,
     });
     mocks.createProfile.mockResolvedValue({
       id: "user-1",
-      fullName: "Usuario Oficina",
-      role: "office",
+      fullName: "Usuario Administrador",
+      role: "admin",
       isActive: true,
     });
     vi.mocked(prisma.technician.findMany).mockResolvedValue([]);
@@ -102,13 +110,13 @@ describe("user resource service", () => {
     mocks.findTechnician.mockResolvedValue(null);
   });
 
-  it("crea usuarios de correo con contrasena temporal sin invitacion", async () => {
+  it("permite al propietario crear administradores por correo", async () => {
     await createUser({
       authMethod: "email",
       email: "USUARIO@EXAMPLE.COM",
-      fullName: "Usuario Oficina",
+      fullName: "Usuario Administrador",
       password: "Temporal123",
-      role: "office",
+      role: "admin",
     });
 
     expect(createSupabaseAdminClient).toHaveBeenCalledOnce();
@@ -118,15 +126,21 @@ describe("user resource service", () => {
       password: "Temporal123",
       user_metadata: {
         auth_method: "email",
-        full_name: "Usuario Oficina",
+        full_name: "Usuario Administrador",
         must_change_password: true,
-        role: "office",
+        role: "admin",
       },
     });
     expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it("guarda los telefonos sin espacios ni caracteres de formato", async () => {
+    mocks.assertUserManager.mockResolvedValue({
+      id: "admin-1",
+      tenantId: "tenant-1",
+      role: "admin",
+      managedRole: "technician",
+    });
     mocks.createProfile.mockResolvedValue({
       id: "user-1",
       fullName: "Tecnico Uno",
@@ -152,6 +166,12 @@ describe("user resource service", () => {
   });
 
   it("actualiza el telefono en Supabase y en el tecnico asociado", async () => {
+    mocks.assertUserManager.mockResolvedValue({
+      id: "admin-1",
+      tenantId: "tenant-1",
+      role: "admin",
+      managedRole: "technician",
+    });
     await updateUser("user-1", { phone: "098 765-4321" });
 
     expect(mocks.updateAuthUser).toHaveBeenCalledWith("user-1", expect.objectContaining({
@@ -163,14 +183,16 @@ describe("user resource service", () => {
       }),
     }));
     expect(mocks.updateTechnician).toHaveBeenCalledWith({
-      where: { id: "technician-1" },
+      where: { id: "technician-1", tenantId: "tenant-1" },
       data: expect.objectContaining({ phone: "+593987654321" }),
     });
   });
 
   it("rechaza un telefono que ya pertenece a otro tecnico", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
     vi.mocked(prisma.technician.findMany).mockResolvedValue([{
       id: "technician-2",
+      tenantId: "tenant-1",
       userId: "user-2",
       phone: "+593 98 765 4321",
       name: "Tecnico Dos",
@@ -187,8 +209,10 @@ describe("user resource service", () => {
   });
 
   it("ignora el telefono liberado de un tecnico inactivo", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
     vi.mocked(prisma.technician.findMany).mockResolvedValue([{
       id: "technician-deleted",
+      tenantId: "tenant-1",
       userId: null,
       phone: "+593987654321",
       name: "Técnico eliminado",
@@ -203,18 +227,20 @@ describe("user resource service", () => {
   });
 
   it("libera el telefono del tecnico al eliminar fisicamente su usuario", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
     mocks.findTechnician.mockResolvedValue({ id: "technician-1" });
 
     await deleteUser("user-1");
 
     expect(mocks.deleteAuthUser).toHaveBeenCalledWith("user-1");
     expect(mocks.updateTechnician).toHaveBeenCalledWith({
-      where: { id: "technician-1" },
+      where: { id: "technician-1", tenantId: "tenant-1" },
       data: { isActive: false, phone: null },
     });
   });
 
   it("restablece la contrasena y obliga a cambiarla en el siguiente ingreso", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
     mocks.getAuthUser.mockResolvedValue({
       data: {
         user: {
@@ -231,7 +257,7 @@ describe("user resource service", () => {
 
     await resetUserPassword("user-1", { password: "Temporal456" });
 
-    expect(mocks.assertAdmin).toHaveBeenCalledOnce();
+    expect(mocks.assertUserManager).toHaveBeenCalledOnce();
     expect(mocks.updateAuthUser).toHaveBeenCalledWith("user-1", {
       password: "Temporal456",
       user_metadata: {
@@ -243,10 +269,34 @@ describe("user resource service", () => {
   });
 
   it("rechaza una contrasena temporal menor a ocho caracteres", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
     await expect(resetUserPassword("user-1", {
       password: "Corta1",
     })).rejects.toThrow("La contraseña temporal debe tener al menos 8 caracteres");
 
     expect(mocks.updateAuthUser).not.toHaveBeenCalled();
+  });
+
+  it("rechaza administrar un usuario de otra empresa", async () => {
+    mocks.assertUserManager.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1", role: "admin", managedRole: "technician" });
+    mocks.findProfile.mockResolvedValue(null);
+
+    await expect(updateUser("user-from-tenant-2", {
+      fullName: "Usuario externo",
+    })).rejects.toThrow("El usuario no existe");
+
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+  });
+
+  it("rechaza que el propietario cree un rol diferente a administrador", async () => {
+    await expect(createUser({
+      authMethod: "email",
+      email: "tecnico@example.com",
+      fullName: "Técnico",
+      password: "Temporal123",
+      role: "technician",
+    })).rejects.toThrow("No puedes asignar ese rol");
+
+    expect(mocks.createAuthUser).not.toHaveBeenCalled();
   });
 });

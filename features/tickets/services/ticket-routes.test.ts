@@ -47,6 +47,7 @@ vi.mock("@/features/tickets/services/ticket-export-service", () => ({
 describe("rutas operativas de soportes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.assertBackOffice.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1" });
     mocks.listCatalogs.mockResolvedValue({ zones: [], supportTypes: [], technicians: [] });
     mocks.listTickets.mockResolvedValue([]);
     mocks.listTicketsForExport.mockResolvedValue([]);
@@ -68,12 +69,25 @@ describe("rutas operativas de soportes", () => {
     }));
 
     expect(assertBackOffice).toHaveBeenCalledTimes(2);
+    expect(mocks.listTickets).toHaveBeenCalledWith(
+      "tenant-1",
+      expect.any(Object),
+    );
+    expect(mocks.createTicket).toHaveBeenCalledWith(
+      "tenant-1",
+      "admin-1",
+      { clientName: "Cliente" },
+    );
   });
 
   it("protege la exportacion de tickets", async () => {
     const response = await GET_TICKET_EXPORT(new Request("http://localhost/api/tickets/export?status=completed"));
 
     expect(assertBackOffice).toHaveBeenCalledOnce();
+    expect(mocks.listTicketsForExport).toHaveBeenCalledWith(
+      "tenant-1",
+      expect.objectContaining({ status: "completed" }),
+    );
     expect(response.headers.get("content-type")).toBe(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
@@ -91,5 +105,12 @@ describe("rutas operativas de soportes", () => {
     }), context);
 
     expect(assertBackOffice).toHaveBeenCalledTimes(2);
+    expect(mocks.getTicket).toHaveBeenCalledWith("tenant-1", "ticket-1");
+    expect(mocks.updateTicket).toHaveBeenCalledWith(
+      "tenant-1",
+      "admin-1",
+      "ticket-1",
+      { status: "assigned" },
+    );
   });
 });

@@ -3,9 +3,11 @@ export type UserItem = {
   email: string | null;
   phone: string | null;
   fullName: string;
-  role: "admin" | "office" | "technician";
+  role: "admin" | "technician";
   isActive: boolean;
   createdAt: string;
 };
 
 export type UserAuthMethod = "email" | "phone";
+
+export type ManagedUserRole = UserItem["role"];

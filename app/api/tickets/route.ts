@@ -5,9 +5,9 @@ import { createTicket, listTickets } from "@/lib/services/tickets";
 
 const GET = async (request: Request) => {
   try {
-    await assertBackOffice();
+    const profile = await assertBackOffice();
     const { searchParams } = new URL(request.url);
-    const result = await listTickets(parseTicketFilters(searchParams));
+    const result = await listTickets(profile.tenantId, parseTicketFilters(searchParams));
 
     return jsonResponse(result);
   } catch (error) {
@@ -18,9 +18,9 @@ const GET = async (request: Request) => {
 
 const POST = async (request: Request) => {
   try {
-    await assertBackOffice();
+    const profile = await assertBackOffice();
     const payload = await request.json();
-    const ticket = await createTicket(payload);
+    const ticket = await createTicket(profile.tenantId, profile.id, payload);
     return jsonResponse({ ticket }, { status: 201 });
   } catch (error) {
     const status = error instanceof BackOfficeAccessError ? error.status : 400;
