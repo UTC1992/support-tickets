@@ -9,7 +9,7 @@ const parseTicketFilters = (searchParams: URLSearchParams): TicketFilters => ({
   supportTypeId: searchParams.get("supportTypeId"),
   technicianId: searchParams.get("technicianId"),
   to: searchParams.get("to"),
-  zoneId: searchParams.get("zoneId"),
+  sectorId: searchParams.get("sectorId"),
 });
 
 export default parseTicketFilters;

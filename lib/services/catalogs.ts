@@ -1,8 +1,8 @@
 import prisma from "@/lib/db/prisma";
 
 const listCatalogs = async (tenantId: string) => {
-  const [zones, supportTypes, technicians] = await Promise.all([
-    prisma.zone.findMany({
+  const [sectors, supportTypes, technicians] = await Promise.all([
+    prisma.sector.findMany({
       where: { tenantId, isActive: true },
       orderBy: { name: "asc" },
     }),
@@ -17,7 +17,7 @@ const listCatalogs = async (tenantId: string) => {
   ]);
 
   return {
-    zones,
+    sectors,
     supportTypes,
     technicians,
     statuses: [

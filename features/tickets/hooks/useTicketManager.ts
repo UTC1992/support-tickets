@@ -14,7 +14,7 @@ const defaultFilters: TicketFilterValues = {
   supportTypeId: "",
   technicianId: "",
   to: "",
-  zoneId: "",
+  sectorId: "",
 };
 
 const useTicketManager = (initialData: TicketPageData) => {
@@ -99,8 +99,8 @@ const useTicketManager = (initialData: TicketPageData) => {
       clientName: value("clientName"),
       clientPhone: value("clientPhone"),
       clientIp: value("clientIp"),
-      sector: value("sector"),
-      zoneId: value("zoneId"),
+      address: value("address"),
+      sectorId: value("sectorId"),
       supportTypeId: value("supportTypeId"),
       technicianId: value("technicianId"),
       status,

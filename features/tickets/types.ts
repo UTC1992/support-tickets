@@ -5,8 +5,8 @@ export type TicketItem = {
   clientName: string;
   clientPhone: string | null;
   clientIp: string | null;
-  sector: string | null;
-  zoneId: string | null;
+  address: string | null;
+  sectorId: string | null;
   supportTypeId: string | null;
   technicianId: string | null;
   status: string;
@@ -17,13 +17,13 @@ export type TicketItem = {
   observation: string | null;
   technicianNotes: string | null;
   resultNotes: string | null;
-  zone: CatalogOption | null;
+  sector: CatalogOption | null;
   supportType: CatalogOption | null;
   technician: CatalogOption | null;
 };
 
 export type TicketCatalogs = {
-  zones: CatalogOption[];
+  sectors: CatalogOption[];
   supportTypes: CatalogOption[];
   technicians: CatalogOption[];
 };
@@ -49,7 +49,7 @@ export type TicketFilterValues = {
   supportTypeId: string;
   technicianId: string;
   to: string;
-  zoneId: string;
+  sectorId: string;
 };
 
 export type TicketFilterField = Exclude<keyof TicketFilterValues, "page" | "pageSize">;

@@ -20,8 +20,8 @@ type TicketCreateInput = {
   clientName: string;
   clientPhone?: string | null;
   clientIp?: string | null;
-  sector?: string | null;
-  zoneId?: string | null;
+  address?: string | null;
+  sectorId?: string | null;
   supportTypeId?: string | null;
   technicianId?: string | null;
   status?: TicketStatusInput;
@@ -37,7 +37,7 @@ type TicketCreateInput = {
 export type TicketFilters = {
   status?: string | null;
   technicianId?: string | null;
-  zoneId?: string | null;
+  sectorId?: string | null;
   supportTypeId?: string | null;
   search?: string | null;
   from?: string | null;
@@ -47,7 +47,7 @@ export type TicketFilters = {
 };
 
 const ticketInclude = {
-  zone: true,
+  sector: true,
   supportType: true,
   technician: true,
 } satisfies Prisma.TicketInclude;
@@ -246,8 +246,8 @@ const parseCreateInput = (
     clientName,
     clientPhone: readOptionalString(payload, "clientPhone"),
     clientIp: readOptionalString(payload, "clientIp"),
-    sector: readOptionalString(payload, "sector"),
-    zoneId: readOptionalString(payload, "zoneId"),
+    address: readOptionalString(payload, "address"),
+    sectorId: readOptionalString(payload, "sectorId"),
     supportTypeId: readOptionalString(payload, "supportTypeId"),
     technicianId: readOptionalString(payload, "technicianId"),
     status: parseStatus(readOptionalString(payload, "status") ?? "pending"),
@@ -269,12 +269,12 @@ const parseUpdateInput = (input: unknown): Prisma.TicketUpdateInput => {
 
   assignNullableString(data, "clientPhone", payload);
   assignNullableString(data, "clientIp", payload);
-  assignNullableString(data, "sector", payload);
+  assignNullableString(data, "address", payload);
   assignNullableString(data, "observation", payload);
   assignNullableString(data, "technicianNotes", payload);
   assignNullableString(data, "resultNotes", payload);
 
-  if ("zoneId" in payload) data.zone = connectNullable(payload.zoneId);
+  if ("sectorId" in payload) data.sector = connectNullable(payload.sectorId);
   if ("supportTypeId" in payload) data.supportType = connectNullable(payload.supportTypeId);
   if ("technicianId" in payload) data.technician = connectNullable(payload.technicianId);
   if ("status" in payload) data.status = parseStatus(readRequiredString(payload, "status"));
@@ -422,7 +422,7 @@ const assignNullableString = (
     TicketCreateInput,
     | "clientPhone"
     | "clientIp"
-    | "sector"
+    | "address"
     | "observation"
     | "technicianNotes"
     | "resultNotes"
@@ -439,7 +439,7 @@ const buildTicketWhere = (tenantId: string, filters: TicketFilters) => {
 
   if (filters.status) where.status = parseStatus(filters.status);
   if (filters.technicianId) where.technicianId = filters.technicianId;
-  if (filters.zoneId) where.zoneId = filters.zoneId;
+  if (filters.sectorId) where.sectorId = filters.sectorId;
   if (filters.supportTypeId) where.supportTypeId = filters.supportTypeId;
 
   if (filters.from || filters.to) {
@@ -455,7 +455,7 @@ const buildTicketWhere = (tenantId: string, filters: TicketFilters) => {
       { clientName: { contains: search, mode: "insensitive" } },
       { clientPhone: { contains: search, mode: "insensitive" } },
       { clientIp: { contains: search, mode: "insensitive" } },
-      { sector: { contains: search, mode: "insensitive" } },
+      { address: { contains: search, mode: "insensitive" } },
       { observation: { contains: search, mode: "insensitive" } },
     ];
   }
@@ -468,16 +468,16 @@ const assertTenantRelations = async (
   tenantId: string,
   payload: Record<string, unknown>,
 ) => {
-  const zoneId = readRelationId(payload, "zoneId");
+  const sectorId = readRelationId(payload, "sectorId");
   const supportTypeId = readRelationId(payload, "supportTypeId");
   const technicianId = readRelationId(payload, "technicianId");
-  const [zone, supportType, technician] = await Promise.all([
-    zoneId ? tx.zone.findFirst({ where: { id: zoneId, tenantId }, select: { id: true } }) : null,
+  const [sector, supportType, technician] = await Promise.all([
+    sectorId ? tx.sector.findFirst({ where: { id: sectorId, tenantId }, select: { id: true } }) : null,
     supportTypeId ? tx.supportType.findFirst({ where: { id: supportTypeId, tenantId }, select: { id: true } }) : null,
     technicianId ? tx.technician.findFirst({ where: { id: technicianId, tenantId }, select: { id: true } }) : null,
   ]);
 
-  if ((zoneId && !zone) || (supportTypeId && !supportType) || (technicianId && !technician)) {
+  if ((sectorId && !sector) || (supportTypeId && !supportType) || (technicianId && !technician)) {
     throw new Error("Related resource not found");
   }
 };

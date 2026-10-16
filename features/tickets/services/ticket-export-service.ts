@@ -8,7 +8,7 @@ type TicketExportItem = {
   clientName: string;
   clientPhone: string | null;
   clientIp: string | null;
-  sector: string | null;
+  address: string | null;
   status: string;
   priority: string;
   intakeDate: Date;
@@ -17,7 +17,7 @@ type TicketExportItem = {
   observation: string | null;
   technicianNotes: string | null;
   resultNotes: string | null;
-  zone: ExportRelation;
+  sector: ExportRelation;
   technician: ExportRelation;
   supportType: ExportRelation;
 };
@@ -105,7 +105,7 @@ const addTicketSheet = (
       ticket.intakeDate,
       ticket.clientName,
       ticket.clientPhone ?? "",
-      ticket.zone?.name ?? ticket.sector ?? "",
+      ticket.sector?.name ?? ticket.address ?? "",
       ticket.supportType?.name ?? "",
       ticket.observation ?? "",
       ticket.technician?.name ?? "SIN ASIGNAR",

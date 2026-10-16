@@ -29,9 +29,20 @@ describe("listTickets", () => {
     });
 
     expect(prisma.ticket.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      include: {
+        sector: true,
+        supportType: true,
+        technician: true,
+      },
       skip: 20,
       take: 20,
-      where: expect.objectContaining({ tenantId: "tenant-1", status: "completed" }),
+      where: expect.objectContaining({
+        tenantId: "tenant-1",
+        status: "completed",
+        OR: expect.arrayContaining([
+          { address: { contains: "cliente", mode: "insensitive" } },
+        ]),
+      }),
     }));
     expect(result).toEqual({
       tickets: [],

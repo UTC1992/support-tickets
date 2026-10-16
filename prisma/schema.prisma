@@ -16,18 +16,18 @@ enum AppRole {
 }
 
 model Tenant {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
-  slug         String        @unique
-  isActive     Boolean       @default(true) @map("is_active")
+  slug         String          @unique
+  isActive     Boolean         @default(true) @map("is_active")
   profiles     Profile[]
-  zones        Zone[]
+  sectors      Sector[]
   technicians  Technician[]
   supportTypes SupportType[]
   tickets      Ticket[]
   history      TicketHistory[]
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@map("tenants")
 }
@@ -75,7 +75,7 @@ model Profile {
   @@map("profiles")
 }
 
-model Zone {
+model Sector {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId  String   @map("tenant_id") @db.Uuid
   name      String
@@ -87,7 +87,7 @@ model Zone {
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
-  @@map("zones")
+  @@map("sectors")
 }
 
 model Technician {
@@ -122,33 +122,33 @@ model SupportType {
 }
 
 model Ticket {
-  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId        String            @map("tenant_id") @db.Uuid
-  clientName      String            @map("client_name")
-  clientPhone     String?           @map("client_phone")
-  clientIp        String?           @map("client_ip")
-  sector          String?
-  zoneId          String?           @map("zone_id") @db.Uuid
-  supportTypeId   String?           @map("support_type_id") @db.Uuid
-  technicianId    String?           @map("technician_id") @db.Uuid
-  status          TicketStatus      @default(pending)
-  priority        TicketPriority    @default(normal)
-  intakeDate      DateTime          @default(dbgenerated("CURRENT_DATE")) @map("intake_date") @db.Date
-  scheduledAt     DateTime?         @map("scheduled_at") @db.Timestamptz(6)
-  completedAt     DateTime?         @map("completed_at") @db.Timestamptz(6)
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String          @map("tenant_id") @db.Uuid
+  clientName      String          @map("client_name")
+  clientPhone     String?         @map("client_phone")
+  clientIp        String?         @map("client_ip")
+  address         String?
+  sectorId        String?         @map("sector_id") @db.Uuid
+  supportTypeId   String?         @map("support_type_id") @db.Uuid
+  technicianId    String?         @map("technician_id") @db.Uuid
+  status          TicketStatus    @default(pending)
+  priority        TicketPriority  @default(normal)
+  intakeDate      DateTime        @default(dbgenerated("CURRENT_DATE")) @map("intake_date") @db.Date
+  scheduledAt     DateTime?       @map("scheduled_at") @db.Timestamptz(6)
+  completedAt     DateTime?       @map("completed_at") @db.Timestamptz(6)
   observation     String?
-  technicianNotes String?           @map("technician_notes")
-  resultNotes     String?           @map("result_notes")
-  sourceSheet     String?           @map("source_sheet")
-  sourceRow       Int?              @map("source_row")
-  createdBy       String?           @map("created_by") @db.Uuid
-  updatedBy       String?           @map("updated_by") @db.Uuid
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
-  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  zone            Zone?             @relation(fields: [zoneId], references: [id], onDelete: SetNull)
-  supportType     SupportType?      @relation(fields: [supportTypeId], references: [id], onDelete: SetNull)
-  technician      Technician?       @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  technicianNotes String?         @map("technician_notes")
+  resultNotes     String?         @map("result_notes")
+  sourceSheet     String?         @map("source_sheet")
+  sourceRow       Int?            @map("source_row")
+  createdBy       String?         @map("created_by") @db.Uuid
+  updatedBy       String?         @map("updated_by") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sector          Sector?         @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  supportType     SupportType?    @relation(fields: [supportTypeId], references: [id], onDelete: SetNull)
+  technician      Technician?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   history         TicketHistory[]
 
   @@index([tenantId, status])
@@ -156,7 +156,7 @@ model Ticket {
   @@index([status])
   @@index([intakeDate(sort: Desc)])
   @@index([technicianId])
-  @@index([zoneId])
+  @@index([sectorId])
   @@index([supportTypeId])
   @@map("tickets")
 }

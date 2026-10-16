@@ -46,8 +46,8 @@ const TicketDetails = ({
       <dl className="grid gap-3 sm:grid-cols-2">
         <Detail label="Teléfono" value={ticket.clientPhone} />
         <Detail label="IP" value={ticket.clientIp} />
-        <Detail label="Sector" value={ticket.sector} />
-        <Detail label="Zona" value={ticket.zone?.name} />
+        <Detail label="Dirección" value={ticket.address} />
+        <Detail label="Sector" value={ticket.sector?.name} />
         <Detail label="Tipo de soporte" value={ticket.supportType?.name} />
         <Detail label="Técnico" value={ticket.technician?.name ?? "Sin asignar"} />
         <Detail label="Estado" value={getOptionLabel(ticketStatuses, ticket.status)} />

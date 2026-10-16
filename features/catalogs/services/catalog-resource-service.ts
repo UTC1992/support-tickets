@@ -5,7 +5,7 @@ import { assertAdmin } from "@/lib/auth/admin";
 import prisma from "@/lib/db/prisma";
 import normalizePhone from "@/lib/services/phone";
 
-const catalogResources = ["zones", "technicians", "support-types"] as const;
+const catalogResources = ["sectors", "technicians", "support-types"] as const;
 export type CatalogResource = (typeof catalogResources)[number];
 
 export class CatalogResourceError extends Error {
@@ -31,8 +31,8 @@ export const createCatalogResource = async (resource: CatalogResource, input: un
   if (phone) await assertUniqueTechnicianPhone(actor.tenantId, phone);
 
   switch (resource) {
-    case "zones":
-      return prisma.zone.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name") }, include: { _count: { select: { tickets: true } } } });
+    case "sectors":
+      return prisma.sector.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name") }, include: { _count: { select: { tickets: true } } } });
     case "technicians":
       return prisma.technician.create({ data: { tenantId: actor.tenantId, name: readRequiredString(payload, "name"), phone }, include: { _count: { select: { tickets: true } } } });
     case "support-types":
@@ -51,8 +51,8 @@ export const updateCatalogResource = async (resource: CatalogResource, id: strin
   if (phone) await assertUniqueTechnicianPhone(actor.tenantId, phone, id);
 
   switch (resource) {
-    case "zones":
-      return prisma.zone.update({ where: { id, tenantId: actor.tenantId }, data: catalogUpdate(payload), include: { _count: { select: { tickets: true } } } });
+    case "sectors":
+      return prisma.sector.update({ where: { id, tenantId: actor.tenantId }, data: catalogUpdate(payload), include: { _count: { select: { tickets: true } } } });
     case "technicians":
       return prisma.technician.update({ where: { id, tenantId: actor.tenantId }, data: { ...catalogUpdate(payload), ...(has(payload, "phone") ? { phone: phone ?? null } : {}) }, include: { _count: { select: { tickets: true } } } });
     case "support-types":
@@ -65,7 +65,7 @@ export const deleteCatalogResource = async (resource: CatalogResource, id: strin
   await assertCatalogBelongsToTenant(resource, id, actor.tenantId);
 
   const where = { id, tenantId: actor.tenantId };
-  if (resource === "zones") await prisma.zone.delete({ where });
+  if (resource === "sectors") await prisma.sector.delete({ where });
   if (resource === "technicians") await prisma.technician.delete({ where });
   if (resource === "support-types") await prisma.supportType.delete({ where });
 };
@@ -130,8 +130,8 @@ const assertCatalogBelongsToTenant = async (
   tenantId: string,
 ) => {
   const where = { id, tenantId };
-  const item = resource === "zones"
-    ? await prisma.zone.findFirst({ where, select: { id: true } })
+  const item = resource === "sectors"
+    ? await prisma.sector.findFirst({ where, select: { id: true } })
     : resource === "technicians"
       ? await prisma.technician.findFirst({ where, select: { id: true } })
       : await prisma.supportType.findFirst({ where, select: { id: true } });
@@ -147,7 +147,7 @@ const readBoolean = (payload: Record<string, unknown>, key: string) => {
   return payload[key];
 };
 
-const catalogUpdate = (payload: Record<string, unknown>): Prisma.ZoneUpdateInput => ({
+const catalogUpdate = (payload: Record<string, unknown>): Prisma.SectorUpdateInput => ({
   ...(has(payload, "name") ? { name: readRequiredString(payload, "name") } : {}),
   ...(has(payload, "isActive") ? { isActive: readBoolean(payload, "isActive") } : {}),
 });

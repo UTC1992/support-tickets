@@ -12,9 +12,9 @@ export const listTechnicians = async () => {
   });
 };
 
-export const listZones = async () => {
+export const listSectors = async () => {
   const profile = await requireAdmin();
-  return prisma.zone.findMany({
+  return prisma.sector.findMany({
     where: { tenantId: profile.tenantId },
     orderBy: { name: "asc" },
     select: { id: true, name: true, isActive: true, _count: { select: { tickets: true } } },

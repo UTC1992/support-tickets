@@ -15,13 +15,13 @@ export const listManagedTickets = async () => {
 
 export const getTicketCatalogs = async () => {
   const profile = await requireBackOffice();
-  const [zones, supportTypes, technicians] = await Promise.all([
-    prisma.zone.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  const [sectors, supportTypes, technicians] = await Promise.all([
+    prisma.sector.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.supportType.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.technician.findMany({ where: { tenantId: profile.tenantId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
-  return { zones, supportTypes, technicians };
+  return { sectors, supportTypes, technicians };
 };
 
 export const listAssignedTickets = async () => {

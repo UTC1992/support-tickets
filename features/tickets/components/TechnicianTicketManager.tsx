@@ -87,7 +87,7 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
         <label className="relative block">
           <Search aria-hidden="true" className="absolute left-3 top-3.5 size-4 text-zinc-400" />
           <span className="sr-only">Buscar soportes</span>
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cliente, teléfono, IP o sector" className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cliente, teléfono, IP o dirección" className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base" />
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <label>
@@ -125,7 +125,7 @@ const TechnicianTicketManager = ({ initialData }: TechnicianTicketManagerProps) 
             </div>
 
             <dl className="mt-4 grid gap-2 text-sm text-zinc-700 sm:grid-cols-2">
-              <div className="flex items-center gap-2"><MapPin aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.zone?.name ?? ticket.sector ?? "Sin ubicación"}</span></div>
+              <div className="flex items-center gap-2"><MapPin aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.sector?.name ?? ticket.address ?? "Sin ubicación"}</span></div>
               {ticket.clientPhone ? <div className="flex items-center gap-2"><Phone aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><a href={`tel:${ticket.clientPhone}`} aria-label={`Llamar a ${ticket.clientName}`} className="font-medium text-emerald-700">{ticket.clientPhone}</a></div> : null}
               {ticket.clientIp ? <div className="flex items-center gap-2"><Network aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{ticket.clientIp}</span></div> : null}
               <div className="flex items-center gap-2"><CalendarClock aria-hidden="true" className="size-4 shrink-0 text-zinc-400" /><span>{formatDate(ticket.scheduledAt ?? ticket.intakeDate)}</span></div>

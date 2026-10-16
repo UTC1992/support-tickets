@@ -7,14 +7,22 @@ import prisma from "@/lib/db/prisma";
 import { assertAdmin } from "@/lib/auth/admin";
 
 const mocks = vi.hoisted(() => ({
+  createSector: vi.fn(),
   createTechnician: vi.fn(),
+  findSector: vi.fn(),
   findTechnician: vi.fn(),
+  updateSector: vi.fn(),
   updateTechnician: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/admin", () => ({ assertAdmin: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({
   default: {
+    sector: {
+      create: mocks.createSector,
+      findFirst: mocks.findSector,
+      update: mocks.updateSector,
+    },
     technician: {
       create: mocks.createTechnician,
       findFirst: mocks.findTechnician,
@@ -30,6 +38,14 @@ describe("catalog technician phones", () => {
     vi.mocked(assertAdmin).mockResolvedValue({ tenantId: "tenant-1" } as never);
     vi.mocked(prisma.technician.findMany).mockResolvedValue([]);
     mocks.findTechnician.mockResolvedValue({ id: "technician-1" });
+  });
+
+  it("crea sectores dentro de la empresa", async () => {
+    await createCatalogResource("sectors", { name: "Centro" });
+
+    expect(mocks.createSector).toHaveBeenCalledWith(expect.objectContaining({
+      data: { name: "Centro", tenantId: "tenant-1" },
+    }));
   });
 
   it("guarda el telefono nacional sin espacios en formato interno", async () => {

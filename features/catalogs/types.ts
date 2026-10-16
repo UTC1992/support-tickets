@@ -1,4 +1,4 @@
-export type CatalogResource = "zones" | "technicians" | "support-types";
+export type CatalogResource = "sectors" | "technicians" | "support-types";
 
 export type CatalogItem = {
   id: string;

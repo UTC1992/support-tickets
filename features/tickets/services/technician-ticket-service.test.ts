@@ -31,7 +31,7 @@ describe("updateTechnicianTicket", () => {
     mocks.update.mockResolvedValue({
       id: "ticket-1",
       status: "in_progress",
-      zone: null,
+      sector: null,
       supportType: null,
       technician: { id: "technician-1", name: "Tecnico" },
     });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import TicketManager from "@/features/tickets/components/TicketManager";
 
@@ -16,8 +16,8 @@ const ticket = {
   clientName: "Cliente de prueba",
   clientPhone: null,
   clientIp: null,
-  sector: null,
-  zoneId: null,
+  address: null,
+  sectorId: null,
   supportTypeId: null,
   technicianId: null,
   status: "pending",
@@ -28,12 +28,16 @@ const ticket = {
   observation: null,
   technicianNotes: null,
   resultNotes: null,
-  zone: null,
+  sector: null,
   supportType: null,
   technician: null,
 };
 
-const catalogs = { zones: [], supportTypes: [], technicians: [] };
+const catalogs = {
+  sectors: [{ id: "sector-1", name: "Centro" }],
+  supportTypes: [],
+  technicians: [],
+};
 const initialData = {
   tickets: [ticket],
   pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
@@ -76,5 +80,17 @@ describe("TicketManager", () => {
     expect(screen.getByText("Fecha de finalización")).toBeInTheDocument();
     expect(screen.getByText("Notas del técnico")).toBeInTheDocument();
     expect(screen.getByText("Resultado")).toBeInTheDocument();
+  });
+
+  it("solicita direccion y sector al crear un soporte", () => {
+    renderTicketManager(false);
+
+    fireEvent.click(screen.getByRole("button", { name: /nuevo/i }));
+
+    const form = within(screen.getByRole("dialog"));
+    expect(form.getByLabelText("Dirección")).toBeInTheDocument();
+    expect(form.getByLabelText("Sector")).toBeInTheDocument();
+    expect(form.queryByLabelText("Zona")).not.toBeInTheDocument();
+    expect(form.getByRole("option", { name: "Centro" })).toBeInTheDocument();
   });
 });

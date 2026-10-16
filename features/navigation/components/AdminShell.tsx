@@ -9,7 +9,7 @@ const navItems = [
   { href: "/admin", label: "Inicio", icon: LayoutDashboard },
   { href: "/admin/tickets", label: "Soportes", icon: Headphones },
   { href: "/admin/technicians", label: "Técnicos", icon: Users },
-  { href: "/admin/zones", label: "Zonas", icon: MapPin },
+  { href: "/admin/sectors", label: "Sectores", icon: MapPin },
   { href: "/admin/support-types", label: "Tipos", icon: Tags },
   { href: "/admin/users", label: "Accesos", icon: UserRoundCog },
 ];

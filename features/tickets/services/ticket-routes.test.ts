@@ -48,7 +48,7 @@ describe("rutas operativas de soportes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.assertBackOffice.mockResolvedValue({ id: "admin-1", tenantId: "tenant-1" });
-    mocks.listCatalogs.mockResolvedValue({ zones: [], supportTypes: [], technicians: [] });
+    mocks.listCatalogs.mockResolvedValue({ sectors: [], supportTypes: [], technicians: [] });
     mocks.listTickets.mockResolvedValue([]);
     mocks.listTicketsForExport.mockResolvedValue([]);
     mocks.createTicket.mockResolvedValue({ id: "ticket-1" });

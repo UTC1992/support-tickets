@@ -7,7 +7,7 @@ const baseTicket = {
   clientName: "Cliente Uno",
   clientPhone: "0999999999",
   clientIp: "10.0.0.1",
-  sector: "Centro",
+  address: "Calle Principal 123",
   status: "completed",
   priority: "normal",
   intakeDate: new Date("2026-10-14T00:00:00.000Z"),
@@ -16,7 +16,7 @@ const baseTicket = {
   observation: "Sin internet",
   technicianNotes: "Router reiniciado",
   resultNotes: "Servicio restablecido",
-  zone: { name: "Saquisili" },
+  sector: { name: "Saquisili" },
   technician: { name: "Tecnico Uno" },
   supportType: { name: "Soporte tecnico" },
 };
@@ -65,6 +65,7 @@ describe("buildTicketWorkbook", () => {
       "RESULTADO",
     ]);
     expect(supportSheet?.getCell("B5").value).toBe("Cliente Uno");
+    expect(supportSheet?.getCell("D5").value).toBe("Saquisili");
     expect(supportSheet?.getCell("A5").numFmt).toBe("dd/mm/yyyy");
     expect(supportSheet?.getCell("C5").numFmt).toBe("@");
     expect(supportSheet?.getCell("K5").numFmt).toBe("dd/mm/yyyy hh:mm");

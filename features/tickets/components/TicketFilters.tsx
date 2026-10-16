@@ -40,7 +40,7 @@ const TicketFilters = ({
           <input
             value={filters.search}
             onChange={(event) => onChange("search", event.target.value)}
-            placeholder="Cliente, teléfono, IP o sector"
+            placeholder="Cliente, teléfono, IP o dirección"
             className="h-11 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-3 text-base outline-none focus:border-zinc-900"
           />
         </label>
@@ -71,10 +71,10 @@ const TicketFilters = ({
               {catalogs.technicians.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
-          <label className="text-sm font-medium">Zona
-            <select value={filters.zoneId} onChange={(event) => onChange("zoneId", event.target.value)} className="mt-1 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base">
-              <option value="">Todas</option>
-              {catalogs.zones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          <label className="text-sm font-medium">Sector
+            <select value={filters.sectorId} onChange={(event) => onChange("sectorId", event.target.value)} className="mt-1 h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base">
+              <option value="">Todos</option>
+              {catalogs.sectors.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Tipo de soporte
